@@ -57,7 +57,9 @@ public class BarcodeWidget extends QuestionWidget implements IBinaryWidget {
 
                 Collect.getInstance().getFormController()
                         .setIndexWaitingForData(formEntryPrompt.getIndex());
-                new IntentIntegrator((Activity) getContext()).initiateScan();
+                IntentIntegrator scannerIntentIntegrator = new IntentIntegrator((Activity) getContext());
+                scannerIntentIntegrator.setPrompt(getContext().getString(R.string.barcode_instructions));
+                scannerIntentIntegrator.initiateScan();
             }
         });
 

@@ -74,6 +74,7 @@
     <string name="forms">Blank Forms</string>
     <string name="getting_location">Loading Location</string>
     <string name="get_barcode">Get Barcode</string>
+    <string name="barcode_instructions">Place a barcode in the rectangle. Use volume up button to turn on light.</string>
     <string name="get_forms">Get Blank Form</string>
     <string name="get_location">Record Location</string>
     <string name="provider_disabled_error">Sorry, Location providers are disabled!</string>

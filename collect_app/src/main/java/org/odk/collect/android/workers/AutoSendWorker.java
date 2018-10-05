@@ -17,6 +17,7 @@ import org.odk.collect.android.activities.NotificationActivity;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.FormsDao;
 import org.odk.collect.android.dao.InstancesDao;
+import org.odk.collect.android.dto.Form;
 import org.odk.collect.android.listeners.InstanceUploaderListener;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.preferences.PreferenceKeys;
@@ -31,6 +32,7 @@ import org.odk.collect.android.utilities.gdrive.GoogleAccountsManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -51,16 +53,25 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
     private CountDownLatch countDownLatch;
     private Result workResult;
 
+    /**
+     * Fails immediately if:
+     *   - storage isn't ready
+     *   - it's not the case that either one form specifies autosend or the currently-available
+     *   network type matches the app-level autosend setting
+     *
+     * When the form-level setting is specified, autosend should happen no matter the connection
+     * type.
+     */
     @NonNull
     @Override
-    public Result doWork() {        // make sure sd card is ready, if not don't try to send
-        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+    public Result doWork() {
+        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)
+                || !(atLeastOneFormSpecifiesAutoSend() || networkTypeMatchesAutoSendSetting())) {
             return Result.FAILURE;
         }
 
         countDownLatch = new CountDownLatch(1);
-
-        uploadForms(getApplicationContext(), isFormAutoSendOptionEnabledForNetwork(getApplicationContext()));
+        uploadForms(getApplicationContext(), GeneralSharedPreferences.isAutoSendEnabled());
 
         try {
             countDownLatch.await();
@@ -68,16 +79,26 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
             Timber.e(e);
             return Result.FAILURE;
         }
+
         return workResult;
     }
 
-    public static boolean isFormAutoSendOptionEnabledForNetwork(Context context) {
-
-        ConnectivityManager manager = (ConnectivityManager) context.getSystemService(
+    /**
+     * Returns whether the currently-available connection type is included in the app-level autosend
+     * settings.
+     *
+     * @return true if a connection is available and settings specify it should trigger auto-send,
+     * false otherwise.
+     */
+    private boolean networkTypeMatchesAutoSendSetting() {
+        ConnectivityManager manager = (ConnectivityManager) getApplicationContext().getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkInfo currentNetworkInfo = manager.getActiveNetworkInfo();
 
-        // make sure autosend is enabled on the given connected interface
+        if (currentNetworkInfo == null) {
+            return false;
+        }
+
         String autosend = (String) GeneralSharedPreferences.getInstance().get(PreferenceKeys.KEY_AUTOSEND);
         boolean sendwifi = autosend.equals("wifi_only");
         boolean sendnetwork = autosend.equals("cellular_only");
@@ -86,16 +107,18 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
             sendnetwork = true;
         }
 
-        return currentNetworkInfo != null
-                && (currentNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI && sendwifi
-                || currentNetworkInfo.getType() == ConnectivityManager.TYPE_MOBILE && sendnetwork);
+        return currentNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI && sendwifi
+                || currentNetworkInfo.getType() == ConnectivityManager.TYPE_MOBILE && sendnetwork;
     }
 
     /**
-     * @param isFormAutoSendOptionEnabled represents whether the auto-send option is enabled at the app level
+     * If the app-level autosend setting is enabled, send all filled forms that don't specify not to
+     * autosend at the form level. If the app-level autosend setting is disabled, send all filled
+     * forms that specify to send at the form level.
+     *
+     * @param isAutoSendAppSettingEnabled represents whether the auto-send option is enabled at the app level
      */
-    private void uploadForms(Context context, boolean isFormAutoSendOptionEnabled) {
-
+    private void uploadForms(Context context, boolean isAutoSendAppSettingEnabled) {
         ArrayList<Long> toUpload = new ArrayList<>();
         Cursor c = new InstancesDao().getFinalizedInstancesCursor();
 
@@ -105,7 +128,7 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
                 String formId;
                 while (c.moveToNext()) {
                     formId = c.getString(c.getColumnIndex(InstanceColumns.JR_FORM_ID));
-                    if (isFormAutoSendEnabled(formId, isFormAutoSendOptionEnabled)) {
+                    if (shouldAutoSendThisForm(formId, isAutoSendAppSettingEnabled)) {
                         Long l = c.getLong(c.getColumnIndex(InstanceColumns._ID));
                         toUpload.add(l);
                     }
@@ -160,22 +183,43 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
     }
 
     /**
-     * @param isFormAutoSendOptionEnabled represents whether the auto-send option is enabled at the app level
+     * @param isAutoSendAppSettingEnabled represents whether the auto-send option is enabled at the app level
      *                                    <p>
      *                                    If the form explicitly sets the auto-send property, then it overrides the preferences.
      */
-    public static boolean isFormAutoSendEnabled(String jrFormId, boolean isFormAutoSendOptionEnabled) {
+    public static boolean shouldAutoSendThisForm(String jrFormId, boolean isAutoSendAppSettingEnabled) {
         Cursor cursor = new FormsDao().getFormsCursorForFormId(jrFormId);
-        String autoSend = null;
+        String formLevelAutoSend = null;
         if (cursor != null && cursor.moveToFirst()) {
             try {
                 int autoSendColumnIndex = cursor.getColumnIndex(AUTO_SEND);
-                autoSend = cursor.getString(autoSendColumnIndex);
+                formLevelAutoSend = cursor.getString(autoSendColumnIndex);
             } finally {
                 cursor.close();
             }
         }
-        return autoSend == null ? isFormAutoSendOptionEnabled : Boolean.valueOf(autoSend);
+        return formLevelAutoSend == null ? isAutoSendAppSettingEnabled
+                : Boolean.valueOf(formLevelAutoSend);
+    }
+
+
+    /**
+     * Returns true if at least one form currently on the device specifies that all of its filled
+     * forms should auto-send no matter the connection type.
+     *
+     * TODO: figure out where this should live
+     */
+    private boolean atLeastOneFormSpecifiesAutoSend() {
+        FormsDao dao = new FormsDao();
+        List<Form> forms = dao.getFormsFromCursor(dao.getFormsCursor());
+
+        for (Form form : forms) {
+            if (Boolean.valueOf(form.getAutoSend())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override

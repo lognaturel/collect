@@ -149,8 +149,7 @@ import timber.log.Timber;
 
 import static android.content.DialogInterface.BUTTON_NEGATIVE;
 import static android.content.DialogInterface.BUTTON_POSITIVE;
-import static org.odk.collect.android.workers.AutoSendWorker.isFormAutoSendEnabled;
-import static org.odk.collect.android.workers.AutoSendWorker.isFormAutoSendOptionEnabledForNetwork;
+import static org.odk.collect.android.workers.AutoSendWorker.shouldAutoSendThisForm;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_MOVING_BACKWARDS;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 import static org.odk.collect.android.utilities.PermissionUtils.checkIfStoragePermissionsGranted;
@@ -2646,7 +2645,6 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
             case SaveToDiskTask.SAVED:
                 ToastUtils.showShortToast(R.string.data_saved_ok);
                 formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_SAVE, 0, null, false, false);
-                enqueueAutosendJobIfNeeded();
                 break;
             case SaveToDiskTask.SAVED_AND_EXIT:
                 ToastUtils.showShortToast(R.string.data_saved_ok);
@@ -2846,10 +2844,17 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
         super.onStop();
     }
 
+    /**
+     * Enqueue an autosend job if the form that was just finalized needs to be autosent. That can
+     * happen either because the blank form specifies that it should be autosent or because app-
+     * wide-autosend is enabled.
+     *
+     * TODO: if the user changes autosend settings, should an autosend job immediately be enqueued?
+     */
     void enqueueAutosendJobIfNeeded() {
         String formId = getFormController().getFormDef().getMainInstance().getRoot().getAttributeValue("", "id");
 
-        if (isFormAutoSendEnabled(formId, isFormAutoSendOptionEnabledForNetwork(this))) {
+        if (shouldAutoSendThisForm(formId, GeneralSharedPreferences.isAutoSendEnabled())) {
             Constraints constraints = new Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
                     .build();

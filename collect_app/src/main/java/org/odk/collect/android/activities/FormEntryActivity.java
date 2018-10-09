@@ -125,6 +125,7 @@ import org.odk.collect.android.widgets.DateTimeWidget;
 import org.odk.collect.android.widgets.QuestionWidget;
 import org.odk.collect.android.widgets.RangeWidget;
 import org.odk.collect.android.widgets.StringWidget;
+import org.odk.collect.android.workers.AutoSendWorker;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -135,6 +136,11 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
+import androidx.work.Constraints;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
@@ -2463,7 +2469,6 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
             case SaveToDiskTask.SAVED:
                 ToastUtils.showShortToast(R.string.data_saved_ok);
                 formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_SAVE, 0, null, false, false);
-                sendSavedBroadcast();
                 break;
             case SaveToDiskTask.SAVED_AND_EXIT:
                 ToastUtils.showShortToast(R.string.data_saved_ok);
@@ -2474,7 +2479,13 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                 } else {
                     formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_EXIT, 0, null, false, true);         // Force writing of audit since we are exiting
                 }
-                sendSavedBroadcast();
+
+                // Request auto-send if app-wide auto-send is enabled or the form that was just
+                // finalized specifies that it should always be auto-sent.
+                String formId = getFormController().getFormDef().getMainInstance().getRoot().getAttributeValue("", "id");
+                if (AutoSendWorker.formShouldBeAutoSent(formId, GeneralSharedPreferences.isAutoSendEnabled())) {
+                    requestAutoSend();
+                }
                 finishReturnInstance();
                 break;
             case SaveToDiskTask.SAVE_ERROR:
@@ -2530,6 +2541,25 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
             beenSwiped = true;
             showNextView();
         }
+    }
+
+    /**
+     * Requests that unsent finalized forms be auto-sent. If no network connection is available,
+     * the work will be performed when a connection becomes available.
+     *
+     * TODO: if the user changes auto-send settings, should an auto-send job immediately be enqueued?
+     */
+    private void requestAutoSend() {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+        OneTimeWorkRequest autoSendWork =
+                new OneTimeWorkRequest.Builder(AutoSendWorker.class)
+                        .addTag(AutoSendWorker.class.getName())
+                        .setConstraints(constraints)
+                        .build();
+        WorkManager.getInstance().beginUniqueWork(AutoSendWorker.class.getName(),
+                ExistingWorkPolicy.KEEP, autoSendWork).enqueue();
     }
 
     /**

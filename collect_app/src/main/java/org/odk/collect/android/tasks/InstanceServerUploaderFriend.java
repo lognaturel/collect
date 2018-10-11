@@ -4,13 +4,14 @@ import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.google.android.gms.analytics.HitBuilders;
 
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dto.Instance;
-import org.odk.collect.android.http.CollectServerClient;
 import org.odk.collect.android.http.HttpHeadResult;
 import org.odk.collect.android.http.OpenRosaHttpInterface;
 import org.odk.collect.android.preferences.PreferenceKeys;
@@ -35,12 +36,118 @@ public class InstanceServerUploaderFriend {
     private static final String URL_PATH_SEP = "/";
     private static final String FAIL = "Error: ";
 
-    OpenRosaHttpInterface httpInterface;
-    WebCredentialsUtils webCredentialsUtils;
+    private OpenRosaHttpInterface httpInterface;
+    private WebCredentialsUtils webCredentialsUtils;
+
+    public InstanceServerUploaderFriend() {
+
+    }
 
     public InstanceServerUploaderFriend(OpenRosaHttpInterface httpInterface, WebCredentialsUtils webCredentialsUtils) {
         this.httpInterface = httpInterface;
         this.webCredentialsUtils = webCredentialsUtils;
+    }
+
+    public class UploadResult {
+        @NonNull
+        private UploadResultTypes type;
+        @Nullable
+        private String customMessage;
+
+        // The server requesting auth may be different than the server a request was made to because
+        // of a redirect. The server requesting auth should be shown to the user so that the user
+        // can decide whether to trust the server and what credentials to provide.
+        @Nullable
+        private Uri authRequestingServerUri;
+
+        public UploadResult(@NonNull UploadResultTypes type, @Nullable String customMessage,
+                            @Nullable Uri authRequestingServerUri) {
+            this.type = type;
+            this.customMessage = customMessage;
+            this.authRequestingServerUri = authRequestingServerUri;
+        }
+
+        public UploadResult(@NonNull UploadResultTypes type, @Nullable String customMessage) {
+            this(type, customMessage, null);
+        }
+
+        public UploadResult(@NonNull UploadResultTypes type, @Nullable Uri authRequestingServerUri) {
+            this(type, null, authRequestingServerUri);
+        }
+
+        public UploadResult(@NonNull UploadResultTypes type) {
+            this(type, null, null);
+        }
+
+        /**
+         * Returns a message to display to the user. A custom message takes precedence, followed by
+         * a localized message, followed by a generic default message.
+         */
+        @NonNull
+        public String getDisplayMessage() {
+            if (customMessage != null) {
+                return customMessage;
+            } else if (type.localizedMessageId != null) {
+                return Collect.getInstance().getString(type.getLocalizedMessageId());
+            } else {
+                return type.getFallbackMessage();
+            }
+        }
+
+        public boolean isFatalError() {
+            return type.isFatalError();
+        }
+
+        @Nullable
+        public Uri getAuthRequestingServerUri() {
+            return authRequestingServerUri;
+        }
+    }
+
+    public enum UploadResultTypes {
+        HOST_NAME_NULL(null, FAIL + "Host name may not be null", false),
+        URL_ERROR(R.string.url_error, "", true),
+        AUTH_REQUESTED(null, "Authorization requested", true),
+        UNEXPECTED_REDIRECT(null, FAIL + "Unexpected redirection attempt to a different host", false),
+        URI_PARSE_ERROR(null, "Exception thrown parsing URI", false),
+        INVALID_HEAD_STATUS(null, FAIL + "Invalid status code on HEAD request.  If you have a "
+                + "web proxy, you may need to login to your network. ", false),
+        HEAD_REQUEST_EXCEPTION(null, FAIL + "Exception performing HEAD request.", false),
+        SUBMISSION_XML_INEXISTENT(null, FAIL + "instance XML file does not exist!", false),
+        // TODO: why would this be fatalError?
+        NO_FILES_IN_PARENT_DIR(null, FAIL + "no files in parent directory", true),
+        HTTP_NOT_ACCEPTED_OR_CREATED(null, FAIL + "HTTP response code not expected", false),
+        GENERIC_EXCEPTION(null, FAIL + "Generic exception", false),
+
+        SUCCESS(R.string.success, "Success", false);
+
+        private final Integer localizedMessageId;
+        @NonNull
+        private final String fallbackMessage;
+        private final boolean fatalError;
+
+        UploadResultTypes(Integer localizedMessageId, @NonNull String fallbackMessage, boolean fatalError) {
+            this.fallbackMessage = fallbackMessage;
+            this.localizedMessageId = localizedMessageId;
+            this.fatalError = fatalError;
+        }
+
+        public Integer getLocalizedMessageId() {
+            return localizedMessageId;
+        }
+
+        @NonNull
+        public String getFallbackMessage() {
+            return fallbackMessage;
+        }
+
+        public boolean isFatalError() {
+            return fatalError;
+        }
+
+        public boolean isSuccess() {
+            return this == SUCCESS;
+        }
     }
 
     /**
@@ -48,8 +155,7 @@ public class InstanceServerUploaderFriend {
      *
      * @return false if credentials are required and we should terminate immediately.
      */
-    public boolean uploadOneSubmission(Instance instance, String urlString, Map<Uri, Uri> uriRemap,
-                                        CollectServerClient.Outcome outcome) {
+    public UploadResult uploadOneSubmission(Instance instance, String urlString, Map<Uri, Uri> uriRemap) {
         Uri instanceDatabaseUri = Uri.withAppendedPath(InstanceProviderAPI.InstanceColumns.CONTENT_URI,
                 instance.getDatabaseId().toString());
 
@@ -68,12 +174,9 @@ public class InstanceServerUploaderFriend {
                     submissionUri.toString());
         } else {
             if (submissionUri.getHost() == null) {
-                Timber.i("Host name may not be null");
-                outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(),
-                        FAIL + "Host name may not be null");
                 contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                 Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
-                return true;
+                return new UploadResult(UploadResultTypes.HOST_NAME_NULL);
             }
 
             URI uri;
@@ -81,8 +184,7 @@ public class InstanceServerUploaderFriend {
                 uri = URI.create(submissionUri.toString());
             } catch (IllegalArgumentException e) {
                 Timber.i(e);
-                outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), Collect.getInstance().getString(R.string.url_error));
-                return false;
+                return new UploadResult(UploadResultTypes.URL_ERROR);
             }
 
             try {
@@ -90,8 +192,7 @@ public class InstanceServerUploaderFriend {
                 Map<String, String> responseHeaders = headResult.getHeaders();
 
                 if (headResult.getStatusCode() == HttpsURLConnection.HTTP_UNAUTHORIZED) {
-                    outcome.authRequestingServer = submissionUri;
-                    return false;
+                    return new UploadResult(UploadResultTypes.AUTH_REQUESTED, submissionUri);
                 } else if (headResult.getStatusCode() == HttpsURLConnection.HTTP_NO_CONTENT) {
                     if (responseHeaders.containsKey("Location")) {
                         try {
@@ -111,56 +212,41 @@ public class InstanceServerUploaderFriend {
                             } else {
                                 // Don't follow a redirection attempt to a different host.
                                 // We can't tell if this is a spoof or not.
-                                outcome.messagesByInstanceId.put(
-                                        instance.getDatabaseId().toString(),
-                                        FAIL
-                                                + "Unexpected redirection attempt to a different "
-                                                + "host: "
-                                                + newURI.toString());
                                 contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS,
                                         InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                                 Collect.getInstance().getContentResolver()
                                         .update(instanceDatabaseUri, contentValues, null, null);
-                                return true;
+                                return new UploadResult(UploadResultTypes.UNEXPECTED_REDIRECT,
+                                        FAIL + "Unexpected redirection attempt to a "
+                                                + "different host: " + newURI.toString());
                             }
                         } catch (Exception e) {
-                            Timber.e(e, "Exception thrown parsing URI for url %s", urlString);
-                            outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(),
-                                    FAIL + urlString + " " + e.toString());
+                            Timber.i(e, "Exception thrown parsing URI for url %s", urlString);
                             contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS,
                                     InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                             Collect.getInstance().getContentResolver()
                                     .update(instanceDatabaseUri, contentValues, null, null);
-                            return true;
+                            return new UploadResult(UploadResultTypes.URI_PARSE_ERROR,
+                                    FAIL + urlString + " " + e.toString());
                         }
                     }
 
                 } else {
                     Timber.w("Status code on Head request: %d", headResult.getStatusCode());
                     if (headResult.getStatusCode() >= HttpsURLConnection.HTTP_OK && headResult.getStatusCode() < HttpsURLConnection.HTTP_MULT_CHOICE) {
-                        outcome.messagesByInstanceId.put(
-                                instance.getDatabaseId().toString(),
-                                FAIL
-                                        + "Invalid status code on Head request.  If you have a "
-                                        + "web proxy, you may need to login to your network. ");
                         contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS,
                                 InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                         Collect.getInstance().getContentResolver()
                                 .update(instanceDatabaseUri, contentValues, null, null);
-                        return true;
+                        return new UploadResult(UploadResultTypes.INVALID_HEAD_STATUS);
                     }
                 }
             } catch (Exception e) {
-                String msg = e.getMessage();
-                if (msg == null) {
-                    msg = e.toString();
-                }
-
-                outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), FAIL + msg);
                 Timber.e(e);
                 contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                 Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
-                return true;
+                return new UploadResult(UploadResultTypes.HEAD_REQUEST_EXCEPTION,
+                        e.getMessage() != null ? e.getMessage() : e.toString());
             }
         }
 
@@ -194,16 +280,16 @@ public class InstanceServerUploaderFriend {
         }
 
         if (!instanceFile.exists() && !submissionFile.exists()) {
-            outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), FAIL + "instance XML file does not exist!");
             contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
             Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
-            return true;
+            return new UploadResult(UploadResultTypes.SUBMISSION_XML_INEXISTENT);
         }
 
         List<File> files = getFilesInParentDirectory(instanceFile, submissionFile, openRosaServer);
 
+        // TODO: When can this case happen? Why is it fatalError?
         if (files == null) {
-            return false;
+            return new UploadResult(UploadResultTypes.NO_FILES_IN_PARENT_DIR);
         }
 
         ResponseMessageParser messageParser;
@@ -217,41 +303,37 @@ public class InstanceServerUploaderFriend {
             int responseCode = messageParser.getResponseCode();
 
             if (responseCode != HttpsURLConnection.HTTP_CREATED && responseCode != HttpsURLConnection.HTTP_ACCEPTED) {
+                UploadResult result;
+
                 if (responseCode == HttpsURLConnection.HTTP_OK) {
-                    outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), FAIL + "Network login failure? Again?");
+                    result = new UploadResult(UploadResultTypes.HTTP_NOT_ACCEPTED_OR_CREATED,
+                            FAIL + "Network login failure? Again?");
                 } else if (responseCode == HttpsURLConnection.HTTP_UNAUTHORIZED) {
-                    outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), FAIL + messageParser.getReasonPhrase() + " (" + responseCode + ") at " + urlString);
+                    result = new UploadResult(UploadResultTypes.HTTP_NOT_ACCEPTED_OR_CREATED,
+                            FAIL + messageParser.getReasonPhrase() + " (" + responseCode +
+                                    ") at " + urlString);
                 } else {
                     // If response from server is valid use that else use default messaging
                     if (messageParser.isValid()) {
-                        outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), FAIL + messageParser.getMessageResponse());
+                        result = new UploadResult(UploadResultTypes.HTTP_NOT_ACCEPTED_OR_CREATED,
+                                FAIL + messageParser.getMessageResponse());
                     } else {
-                        outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), FAIL + messageParser.getReasonPhrase() + " (" + responseCode + ") at " + urlString);
+                        result = new UploadResult(UploadResultTypes.HTTP_NOT_ACCEPTED_OR_CREATED,
+                                FAIL + messageParser.getReasonPhrase() + " (" + responseCode +
+                                        ") at " + urlString);
                     }
 
                 }
                 contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                 Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
-                return true;
+                return result;
             }
 
         } catch (IOException e) {
-            String msg = e.getMessage();
-            if (msg == null) {
-                msg = e.toString();
-            }
-            outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), FAIL + "Generic Exception: " + msg);
             contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
             Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
-            return true;
-        }
-
-        // If response from server is valid use that else use default messaging
-        if (messageParser.isValid()) {
-            outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), messageParser.getMessageResponse());
-        } else {
-            // Default messaging
-            outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), Collect.getInstance().getString(R.string.success));
+            return new UploadResult(UploadResultTypes.GENERIC_EXCEPTION,
+                    "Generic Exception: " + (e.getMessage() != null ? e.getMessage() : e.toString()));
         }
 
         contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
@@ -264,7 +346,9 @@ public class InstanceServerUploaderFriend {
                         .setAction("HTTP")
                         .build());
 
-        return true;
+        return new UploadResult(UploadResultTypes.SUCCESS,
+                // Use response from server if valid
+                messageParser.isValid() ? messageParser.getMessageResponse() : null);
     }
 
     private List<File> getFilesInParentDirectory(File instanceFile, File submissionFile, boolean openRosaServer) {

@@ -43,6 +43,8 @@ import javax.inject.Inject;
 
 import timber.log.Timber;
 
+import static org.odk.collect.android.tasks.InstanceServerUploaderFriend.*;
+
 /**
  * Background task for uploading completed forms.
  *
@@ -90,7 +92,15 @@ public class InstanceServerUploader extends InstanceUploader {
 
             String urlString = getUrlToSubmitTo(instance, deviceId);
 
-            if (!friend.uploadOneSubmission(instance, urlString, uriRemap, outcome)) {
+            InstanceServerUploaderFriend.UploadResult result = friend.uploadOneSubmission(instance,
+                    urlString, uriRemap);
+            outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), result.getDisplayMessage());
+
+            if (result.getAuthRequestingServerUri() != null) {
+                outcome.authRequestingServer = result.getAuthRequestingServerUri();
+            }
+
+            if (result.isFatalError()) {
                 return outcome;
             }
         }

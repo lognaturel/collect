@@ -19,6 +19,9 @@ import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.FormsDao;
 import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.dto.Form;
+import org.odk.collect.android.dto.Instance;
+import org.odk.collect.android.logic.PropertyManager;
+import org.odk.collect.android.tasks.InstanceServerUploaderFriend;
 import org.odk.collect.android.utilities.IconUtils;
 import org.odk.collect.android.utilities.gdrive.GoogleAccountsManager;
 import org.odk.collect.android.utilities.InstanceUploaderUtils;
@@ -30,6 +33,8 @@ import org.odk.collect.android.tasks.InstanceGoogleSheetsUploader;
 import org.odk.collect.android.tasks.InstanceServerUploader;
 import org.odk.collect.android.utilities.PermissionUtils;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,6 +61,8 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
      */
     private CountDownLatch countDownLatch;
     private Result workResult;
+
+    private InstanceServerUploaderFriend uploader = new InstanceServerUploaderFriend();
 
     /**
      * If the app-level auto-send setting is enabled, send all finalized forms that don't specify not
@@ -88,7 +95,7 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
             return Result.FAILURE;
         }
 
-        List<Long> toUpload = getInstancesToAutoSend(GeneralSharedPreferences.isAutoSendEnabled());
+        List<Instance> toUpload = getInstancesToAutoSend(GeneralSharedPreferences.isAutoSendEnabled());
 
         if (toUpload.isEmpty()) {
             return Result.SUCCESS;
@@ -96,28 +103,20 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
 
         countDownLatch = new CountDownLatch(1);
 
-        Long[] toSendArray = new Long[toUpload.size()];
-        toUpload.toArray(toSendArray);
-
         GeneralSharedPreferences settings = GeneralSharedPreferences.getInstance();
         String protocol = (String) settings.get(PreferenceKeys.KEY_PROTOCOL);
 
         if (protocol.equals(getApplicationContext().getString(R.string.protocol_google_sheets))) {
-            sendInstancesToGoogleSheets(getApplicationContext(), toSendArray);
+            // sendInstancesToGoogleSheets(getApplicationContext(), toSendArray);
         } else if (protocol.equals(getApplicationContext().getString(R.string.protocol_odk_default))) {
-            instanceServerUploader = new InstanceServerUploader();
-            instanceServerUploader.setUploaderListener(this);
-            // TODO: instanceServerUploader is an AsyncTask so execute should be run off the main
-            // thread. This seems to work but unclear what behavior guarantees there are. We should
-            // move away from AsyncTask here.
-            instanceServerUploader.execute(toSendArray);
-        }
+            String deviceId = new PropertyManager(Collect.getInstance().getApplicationContext())
+                    .getSingularProperty(PropertyManager.withUri(PropertyManager.PROPMGR_DEVICE_ID));
 
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            Timber.e(e);
-            return Result.FAILURE;
+            Map<Uri, Uri> uriRemap = new HashMap<>();
+            for (Instance instance : toUpload) {
+                String urlString = getUrlToSubmitTo(instance, deviceId);
+                uploader.uploadOneSubmission(instance, urlString, uriRemap);
+            }
         }
 
         return workResult;
@@ -145,6 +144,36 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
         }
 
         countDownLatch.countDown();
+    }
+
+    /**
+     * Returns the URL this instance should be submitted to with appended deviceId.
+     *
+     * If the upload was triggered by an external app and specified a custom URL, use that one.
+     * Otherwise, use the submission URL configured in the form
+     * (https://opendatakit.github.io/xforms-spec/#submission-attributes). Finally, default to the
+     * URL configured at the submission level.
+     *
+     * TODO: combine with version used by async task. That one may have an override from an intent.
+     */
+    @NonNull
+    private String getUrlToSubmitTo(Instance currentInstance, String deviceId) {
+        String urlString;
+
+        if (currentInstance.getSubmissionUri() != null) {
+            urlString = currentInstance.getSubmissionUri().trim();
+        } else {
+            urlString = uploader.getServerSubmissionURL();
+        }
+
+        // add deviceID to request
+        try {
+            urlString += "?deviceID=" + URLEncoder.encode(deviceId != null ? deviceId : "", "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            Timber.i(e, "Error encoding URL for device id : %s", deviceId);
+        }
+
+        return urlString;
     }
 
     /**
@@ -202,27 +231,19 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
      * auto-sent.
      */
     @NonNull
-    private List<Long> getInstancesToAutoSend(boolean isAutoSendAppSettingEnabled) {
-        List<Long> toUpload = new ArrayList<>();
-        Cursor c = new InstancesDao().getFinalizedInstancesCursor();
+    private List<Instance> getInstancesToAutoSend(boolean isAutoSendAppSettingEnabled) {
+        InstancesDao dao = new InstancesDao();
 
-        try {
-            if (c != null && c.getCount() > 0) {
-                c.move(-1);
-                String formId;
-                while (c.moveToNext()) {
-                    formId = c.getString(c.getColumnIndex(InstanceColumns.JR_FORM_ID));
-                    if (formShouldBeAutoSent(formId, isAutoSendAppSettingEnabled)) {
-                        Long l = c.getLong(c.getColumnIndex(InstanceColumns._ID));
-                        toUpload.add(l);
-                    }
-                }
-            }
-        } finally {
-            if (c != null) {
-                c.close();
+        Cursor c = dao.getFinalizedInstancesCursor();
+        List<Instance> allFinalized = dao.getInstancesFromCursor(c);
+
+        List<Instance> toUpload = new ArrayList<>();
+        for (Instance instance : allFinalized) {
+            if (formShouldBeAutoSent(instance.getJrFormId(), isAutoSendAppSettingEnabled)) {
+                toUpload.add(instance);
             }
         }
+
         return toUpload;
     }
 

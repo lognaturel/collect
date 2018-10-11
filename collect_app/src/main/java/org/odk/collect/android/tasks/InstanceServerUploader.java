@@ -14,36 +14,25 @@
 
 package org.odk.collect.android.tasks;
 
-import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 
-import com.google.android.gms.analytics.HitBuilders;
-
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.dto.Instance;
 import org.odk.collect.android.http.CollectServerClient.Outcome;
-import org.odk.collect.android.http.HttpHeadResult;
 import org.odk.collect.android.http.OpenRosaHttpInterface;
 import org.odk.collect.android.logic.PropertyManager;
 import org.odk.collect.android.preferences.PreferenceKeys;
-import org.odk.collect.android.provider.InstanceProviderAPI;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.utilities.ApplicationConstants;
-import org.odk.collect.android.utilities.FileUtils;
-import org.odk.collect.android.utilities.ResponseMessageParser;
 import org.odk.collect.android.utilities.WebCredentialsUtils;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.net.ssl.HttpsURLConnection;
 
 import timber.log.Timber;
 
@@ -102,14 +90,7 @@ public class InstanceServerUploader extends InstanceUploader {
 
             publishProgress(i + 1, instancesToUpload.size());
 
-            String urlString = getURLToSubmitTo(instance);
-
-            // add deviceID to request
-            try {
-                urlString += "?deviceID=" + URLEncoder.encode(deviceId != null ? deviceId : "", "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                Timber.i(e, "Error encoding URL for device id : %s", deviceId);
-            }
+            String urlString = getUrlToSubmitTo(instance, deviceId);
 
             if (!friend.uploadOneSubmission(instance, urlString, uriRemap, outcome)) {
                 return outcome;
@@ -158,20 +139,33 @@ public class InstanceServerUploader extends InstanceUploader {
     }
 
     /**
-     * Returns the URL this instance should be submitted to. If the upload was triggered by an
-     * external app and specified a custom URL, use that one. Otherwise, use the submission URL
-     * configured in the form (https://opendatakit.github.io/xforms-spec/#submission-attributes).
-     * Finally, default to the URL configured at the submission level.
+     * Returns the URL this instance should be submitted to with appended deviceId.
+     *
+     * If the upload was triggered by an external app and specified a custom URL, use that one.
+     * Otherwise, use the submission URL configured in the form
+     * (https://opendatakit.github.io/xforms-spec/#submission-attributes). Finally, default to the
+     * URL configured at the submission level.
      */
     @NonNull
-    private String getURLToSubmitTo(Instance currentInstance) {
+    private String getUrlToSubmitTo(Instance currentInstance, String deviceId) {
+        String urlString;
+
         if (completeDestinationUrl != null) {
-            return completeDestinationUrl;
+            urlString = completeDestinationUrl;
         } else if (currentInstance.getSubmissionUri() != null) {
-            return currentInstance.getSubmissionUri().trim();
+            urlString = currentInstance.getSubmissionUri().trim();
         } else {
-            return getServerSubmissionURL();
+            urlString = getServerSubmissionURL();
         }
+
+        // add deviceID to request
+        try {
+            urlString += "?deviceID=" + URLEncoder.encode(deviceId != null ? deviceId : "", "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            Timber.i(e, "Error encoding URL for device id : %s", deviceId);
+        }
+
+        return urlString;
     }
 
     private String getServerSubmissionURL() {

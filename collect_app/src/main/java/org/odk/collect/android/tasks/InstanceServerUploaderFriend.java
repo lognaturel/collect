@@ -161,12 +161,13 @@ public class InstanceServerUploaderFriend {
 
         Uri submissionUri = Uri.parse(urlString);
 
+        // Used to determine if attachments should be sent for Aggregate < 0.9x servers
         boolean openRosaServer = false;
+
+        // We already issued a head request and got a response, so we know it was an
+        // OpenRosa-compliant server. We also know the proper URL to send the submission to and
+        // the proper scheme.
         if (uriRemap.containsKey(submissionUri)) {
-            // we already issued a head request and got a response,
-            // so we know the proper URL to send the submission to
-            // and the proper scheme. We also know that it was an
-            // OpenRosa compliant server.
             openRosaServer = true;
             submissionUri = uriRemap.get(submissionUri);
             Timber.i("Using Uri remap for submission %s. Now: %s", instance.getDatabaseId(),
@@ -192,13 +193,14 @@ public class InstanceServerUploaderFriend {
                 if (headResult.getStatusCode() == HttpsURLConnection.HTTP_UNAUTHORIZED) {
                     return new UploadResult(UploadResultTypes.AUTH_REQUESTED, submissionUri);
                 } else if (headResult.getStatusCode() == HttpsURLConnection.HTTP_NO_CONTENT) {
+                    // Redirect header received
                     if (responseHeaders.containsKey("Location")) {
                         try {
                             Uri newURI = Uri.parse(URLDecoder.decode(responseHeaders.get("Location"), "utf-8"));
                             if (submissionUri.getHost().equalsIgnoreCase(newURI.getHost())) {
+                                // Allow redirects within same host. This could be redirecting to HTTPS.
                                 openRosaServer = true;
-                                // trust the server to tell us a new location
-                                // ... and possibly to use https instead.
+
                                 // Re-add params if server didn't respond with params
                                 if (newURI.getQuery() == null) {
                                     newURI = newURI.buildUpon()
@@ -224,7 +226,8 @@ public class InstanceServerUploaderFriend {
                     }
                 } else {
                     Timber.w("Status code on Head request: %d", headResult.getStatusCode());
-                    if (headResult.getStatusCode() >= HttpsURLConnection.HTTP_OK && headResult.getStatusCode() < HttpsURLConnection.HTTP_MULT_CHOICE) {
+                    if (headResult.getStatusCode() >= HttpsURLConnection.HTTP_OK
+                            && headResult.getStatusCode() < HttpsURLConnection.HTTP_MULT_CHOICE) {
                         saveFailedStatusToDatabase(instanceDatabaseUri);
                         return new UploadResult(UploadResultTypes.INVALID_HEAD_STATUS);
                     }
@@ -237,27 +240,11 @@ public class InstanceServerUploaderFriend {
             }
         }
 
-        // At this point, we may have updated the uri to use https.
-        // This occurs only if the Location header keeps the host name
-        // the same. If it specifies a different host name, we error
-        // out.
-        //
-        // And we may have set authentication cookies in our
-        // cookiestore (referenced by localContext) that will enable
-        // authenticated publication to the server.
-        //
-        // get instance file
-
-        // Under normal operations, we upload the instanceFile to
-        // the server.  However, during the save, there is a failure
-        // window that may mark the submission as complete but leave
-        // the file-to-be-uploaded with the name "submission.xml" and
-        // the plaintext submission files on disk.  In this case,
-        // upload the submission.xml and all the files in the directory.
-        // This means the plaintext files and the encrypted files
-        // will be sent to the server and the server will have to
-        // figure out what to do with them.
-
+        // When encrypting submissions, there is a failure window that may mark the submission as
+        // complete but leave the file-to-be-uploaded with the name "submission.xml" and the plaintext
+        // submission files on disk.  In this case, upload the submission.xml and all the files in
+        // the directory. This means the plaintext files and the encrypted files will be sent to the
+        // server and the server will have to figure out what to do with them.
         File instanceFile = new File(instance.getInstanceFilePath());
         File submissionFile = new File(instanceFile.getParentFile(), "submission.xml");
         if (submissionFile.exists()) {
@@ -273,7 +260,7 @@ public class InstanceServerUploaderFriend {
 
         List<File> files = getFilesInParentDirectory(instanceFile, submissionFile, openRosaServer);
 
-        // TODO: When can this case happen? Why is it fatalError?
+        // TODO: When can this case happen? Why is it fatal?
         if (files == null) {
             return new UploadResult(UploadResultTypes.NO_FILES_IN_PARENT_DIR);
         }

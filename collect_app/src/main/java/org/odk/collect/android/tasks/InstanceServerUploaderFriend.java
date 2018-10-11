@@ -159,7 +159,6 @@ public class InstanceServerUploaderFriend {
         Uri instanceDatabaseUri = Uri.withAppendedPath(InstanceProviderAPI.InstanceColumns.CONTENT_URI,
                 instance.getDatabaseId().toString());
 
-        ContentValues contentValues = new ContentValues();
         Uri submissionUri = Uri.parse(urlString);
 
         boolean openRosaServer = false;
@@ -174,8 +173,7 @@ public class InstanceServerUploaderFriend {
                     submissionUri.toString());
         } else {
             if (submissionUri.getHost() == null) {
-                contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-                Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+                saveFailedStatusToDatabase(instanceDatabaseUri);
                 return new UploadResult(UploadResultTypes.HOST_NAME_NULL);
             }
 
@@ -212,39 +210,28 @@ public class InstanceServerUploaderFriend {
                             } else {
                                 // Don't follow a redirection attempt to a different host.
                                 // We can't tell if this is a spoof or not.
-                                contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS,
-                                        InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-                                Collect.getInstance().getContentResolver()
-                                        .update(instanceDatabaseUri, contentValues, null, null);
+                                saveFailedStatusToDatabase(instanceDatabaseUri);
                                 return new UploadResult(UploadResultTypes.UNEXPECTED_REDIRECT,
                                         FAIL + "Unexpected redirection attempt to a "
                                                 + "different host: " + newURI.toString());
                             }
                         } catch (Exception e) {
                             Timber.i(e, "Exception thrown parsing URI for url %s", urlString);
-                            contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS,
-                                    InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-                            Collect.getInstance().getContentResolver()
-                                    .update(instanceDatabaseUri, contentValues, null, null);
+                            saveFailedStatusToDatabase(instanceDatabaseUri);
                             return new UploadResult(UploadResultTypes.URI_PARSE_ERROR,
                                     FAIL + urlString + " " + e.toString());
                         }
                     }
-
                 } else {
                     Timber.w("Status code on Head request: %d", headResult.getStatusCode());
                     if (headResult.getStatusCode() >= HttpsURLConnection.HTTP_OK && headResult.getStatusCode() < HttpsURLConnection.HTTP_MULT_CHOICE) {
-                        contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS,
-                                InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-                        Collect.getInstance().getContentResolver()
-                                .update(instanceDatabaseUri, contentValues, null, null);
+                        saveFailedStatusToDatabase(instanceDatabaseUri);
                         return new UploadResult(UploadResultTypes.INVALID_HEAD_STATUS);
                     }
                 }
             } catch (Exception e) {
                 Timber.e(e);
-                contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-                Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+                saveFailedStatusToDatabase(instanceDatabaseUri);
                 return new UploadResult(UploadResultTypes.HEAD_REQUEST_EXCEPTION,
                         e.getMessage() != null ? e.getMessage() : e.toString());
             }
@@ -280,8 +267,7 @@ public class InstanceServerUploaderFriend {
         }
 
         if (!instanceFile.exists() && !submissionFile.exists()) {
-            contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-            Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+            saveFailedStatusToDatabase(instanceDatabaseUri);
             return new UploadResult(UploadResultTypes.SUBMISSION_XML_INEXISTENT);
         }
 
@@ -324,20 +310,17 @@ public class InstanceServerUploaderFriend {
                     }
 
                 }
-                contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-                Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+                saveFailedStatusToDatabase(instanceDatabaseUri);
                 return result;
             }
 
         } catch (IOException e) {
-            contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-            Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+            saveFailedStatusToDatabase(instanceDatabaseUri);
             return new UploadResult(UploadResultTypes.GENERIC_EXCEPTION,
                     "Generic Exception: " + (e.getMessage() != null ? e.getMessage() : e.toString()));
         }
 
-        contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
-        Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+        saveSuccessStatusToDatabase(instanceDatabaseUri);
 
         Collect.getInstance()
                 .getDefaultTracker()
@@ -349,6 +332,18 @@ public class InstanceServerUploaderFriend {
         return new UploadResult(UploadResultTypes.SUCCESS,
                 // Use response from server if valid
                 messageParser.isValid() ? messageParser.getMessageResponse() : null);
+    }
+
+    private void saveSuccessStatusToDatabase(Uri instanceDatabaseUri) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
+        Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+    }
+
+    private void saveFailedStatusToDatabase(Uri instanceDatabaseUri) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
+        Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
     }
 
     private List<File> getFilesInParentDirectory(File instanceFile, File submissionFile, boolean openRosaServer) {

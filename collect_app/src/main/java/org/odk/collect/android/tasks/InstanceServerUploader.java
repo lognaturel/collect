@@ -49,8 +49,6 @@ import timber.log.Timber;
  * @author Carl Hartung (carlhartung@gmail.com)
  */
 public class InstanceServerUploader extends InstanceUploader {
-    private static final String URL_PATH_SEP = "/";
-
     @Inject
     OpenRosaHttpInterface httpInterface;
 
@@ -155,7 +153,7 @@ public class InstanceServerUploader extends InstanceUploader {
         } else if (currentInstance.getSubmissionUri() != null) {
             urlString = currentInstance.getSubmissionUri().trim();
         } else {
-            urlString = getServerSubmissionURL();
+            urlString = friend.getServerSubmissionURL();
         }
 
         // add deviceID to request
@@ -166,30 +164,6 @@ public class InstanceServerUploader extends InstanceUploader {
         }
 
         return urlString;
-    }
-
-    private String getServerSubmissionURL() {
-
-        Collect app = Collect.getInstance();
-
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(
-                Collect.getInstance());
-        String serverBase = settings.getString(PreferenceKeys.KEY_SERVER_URL,
-                app.getString(R.string.default_server_url));
-
-        if (serverBase.endsWith(URL_PATH_SEP)) {
-            serverBase = serverBase.substring(0, serverBase.length() - 1);
-        }
-
-        // NOTE: /submission must not be translated! It is the well-known path on the server.
-        String submissionPath = settings.getString(PreferenceKeys.KEY_SUBMISSION_URL,
-                app.getString(R.string.default_odk_submission));
-
-        if (!submissionPath.startsWith(URL_PATH_SEP)) {
-            submissionPath = URL_PATH_SEP + submissionPath;
-        }
-
-        return serverBase + submissionPath;
     }
 
     @Override

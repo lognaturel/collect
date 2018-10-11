@@ -1,7 +1,9 @@
 package org.odk.collect.android.tasks;
 
 import android.content.ContentValues;
+import android.content.SharedPreferences;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 
 import com.google.android.gms.analytics.HitBuilders;
 
@@ -11,6 +13,7 @@ import org.odk.collect.android.dto.Instance;
 import org.odk.collect.android.http.CollectServerClient;
 import org.odk.collect.android.http.HttpHeadResult;
 import org.odk.collect.android.http.OpenRosaHttpInterface;
+import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.provider.InstanceProviderAPI;
 import org.odk.collect.android.utilities.FileUtils;
 import org.odk.collect.android.utilities.ResponseMessageParser;
@@ -29,6 +32,7 @@ import javax.net.ssl.HttpsURLConnection;
 import timber.log.Timber;
 
 public class InstanceServerUploaderFriend {
+    private static final String URL_PATH_SEP = "/";
     private static final String FAIL = "Error: ";
 
     OpenRosaHttpInterface httpInterface;
@@ -303,5 +307,27 @@ public class InstanceServerUploaderFriend {
         }
 
         return files;
+    }
+
+    public String getServerSubmissionURL() {
+        Collect app = Collect.getInstance();
+
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(app);
+        String serverBase = settings.getString(PreferenceKeys.KEY_SERVER_URL,
+                app.getString(R.string.default_server_url));
+
+        if (serverBase.endsWith(URL_PATH_SEP)) {
+            serverBase = serverBase.substring(0, serverBase.length() - 1);
+        }
+
+        // NOTE: /submission must not be translated! It is the well-known path on the server.
+        String submissionPath = settings.getString(PreferenceKeys.KEY_SUBMISSION_URL,
+                app.getString(R.string.default_odk_submission));
+
+        if (!submissionPath.startsWith(URL_PATH_SEP)) {
+            submissionPath = URL_PATH_SEP + submissionPath;
+        }
+
+        return serverBase + submissionPath;
     }
 }

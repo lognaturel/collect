@@ -11,6 +11,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 
 import org.odk.collect.android.R;
@@ -20,20 +21,28 @@ import org.odk.collect.android.dao.FormsDao;
 import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.dto.Form;
 import org.odk.collect.android.dto.Instance;
+import org.odk.collect.android.http.HttpClientConnection;
+import org.odk.collect.android.http.HttpCredentialsInterface;
+import org.odk.collect.android.http.HttpGetResult;
+import org.odk.collect.android.http.HttpHeadResult;
+import org.odk.collect.android.http.OpenRosaHttpInterface;
 import org.odk.collect.android.logic.PropertyManager;
 import org.odk.collect.android.tasks.InstanceServerUploaderFriend;
 import org.odk.collect.android.utilities.IconUtils;
+import org.odk.collect.android.utilities.ResponseMessageParser;
+import org.odk.collect.android.utilities.WebCredentialsUtils;
 import org.odk.collect.android.utilities.gdrive.GoogleAccountsManager;
 import org.odk.collect.android.utilities.InstanceUploaderUtils;
-import org.odk.collect.android.listeners.InstanceUploaderListener;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.tasks.InstanceGoogleSheetsUploader;
-import org.odk.collect.android.tasks.InstanceServerUploader;
 import org.odk.collect.android.utilities.PermissionUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,20 +58,11 @@ import timber.log.Timber;
 import static org.odk.collect.android.provider.FormsProviderAPI.FormsColumns.AUTO_SEND;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes.FORMS_UPLOADED_NOTIFICATION;
 
-public class AutoSendWorker extends Worker implements InstanceUploaderListener {
-    InstanceServerUploader instanceServerUploader;
-
-    InstanceGoogleSheetsUploader instanceGoogleSheetsUploader;
+public class AutoSendWorker extends Worker {
+    private InstanceServerUploaderFriend uploader;
+    private InstanceGoogleSheetsUploader instanceGoogleSheetsUploader;
 
     private String resultMessage;
-    /**
-     * Causes the doWork method to wait until the instanceUploader AsyncTask has completed.
-     * This strategy assumes that the uploader tasks will always terminate.
-     */
-    private CountDownLatch countDownLatch;
-    private Result workResult;
-
-    private InstanceServerUploaderFriend uploader = new InstanceServerUploaderFriend();
 
     /**
      * If the app-level auto-send setting is enabled, send all finalized forms that don't specify not
@@ -82,6 +82,9 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
     @Override
     @SuppressLint("WrongThread")
     public Result doWork() {
+        uploader = new InstanceServerUploaderFriend(new HttpClientConnection(),
+                new WebCredentialsUtils());
+
         ConnectivityManager manager = (ConnectivityManager) getApplicationContext().getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkInfo currentNetworkInfo = manager.getActiveNetworkInfo();
@@ -101,10 +104,10 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
             return Result.SUCCESS;
         }
 
-        countDownLatch = new CountDownLatch(1);
-
         GeneralSharedPreferences settings = GeneralSharedPreferences.getInstance();
         String protocol = (String) settings.get(PreferenceKeys.KEY_PROTOCOL);
+
+        Map<String, String> resultMessagesByInstanceId = new HashMap<>();
 
         if (protocol.equals(getApplicationContext().getString(R.string.protocol_google_sheets))) {
             // sendInstancesToGoogleSheets(getApplicationContext(), toSendArray);
@@ -113,37 +116,30 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
                     .getSingularProperty(PropertyManager.withUri(PropertyManager.PROPMGR_DEVICE_ID));
 
             Map<Uri, Uri> uriRemap = new HashMap<>();
+
             for (Instance instance : toUpload) {
                 String urlString = getUrlToSubmitTo(instance, deviceId);
-                uploader.uploadOneSubmission(instance, urlString, uriRemap);
+
+                InstanceServerUploaderFriend.UploadResult result = uploader.uploadOneSubmission(instance,
+                        urlString, uriRemap);
+
+                // TODO: can we detect recoverable/transient network errors and retry instead? This means
+                // that unlike with the implicit intent implementation, there won't be a retry for those
+                // kinds of problems until another form is finalized.
+                if (result.isFatalError()) {
+                    return Result.FAILURE;
+                } else {
+                    resultMessagesByInstanceId.put(instance.getDatabaseId().toString(),
+                            result.getDisplayMessage());
+                }
             }
-        }
-
-        return workResult;
-    }
-
-    @Override
-    public void uploadingComplete(HashMap<String, String> resultMessagesByInstanceId) {
-        if (instanceServerUploader != null) {
-            instanceServerUploader.setUploaderListener(null);
-        }
-        if (instanceGoogleSheetsUploader != null) {
-            instanceGoogleSheetsUploader.setUploaderListener(null);
         }
 
         String message = formatOverallResultMessage(resultMessagesByInstanceId);
         showUploadStatusNotification(resultMessagesByInstanceId, message);
+        // TODO: delete instances if auto-delete is on.
 
-        // TODO: can we detect recoverable/transient network errors and retry instead? This means
-        // that unlike with the implicit intent implementation, there won't be a retry for those
-        // kinds of problems until another form is finalized.
-        if (resultMessagesByInstanceId == null) {
-            workResult = Result.FAILURE;
-        } else {
-            workResult = Result.SUCCESS;
-        }
-
-        countDownLatch.countDown();
+        return Result.SUCCESS;
     }
 
     /**
@@ -208,13 +204,10 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
 
             String googleUsername = accountsManager.getSelectedAccount();
             if (googleUsername.isEmpty()) {
-                workResult = Result.FAILURE;
-                countDownLatch.countDown();
                 return;
             }
             accountsManager.getCredential().setSelectedAccountName(googleUsername);
             instanceGoogleSheetsUploader = new InstanceGoogleSheetsUploader(accountsManager);
-            instanceGoogleSheetsUploader.setUploaderListener(this);
             // TODO: instanceServerUploader is an AsyncTask so execute should be run off the main
             // thread. This seems to work but unclear what behavior guarantees there are. We should
             // move away from AsyncTask here. This requires a deeper rethink/refactor of the
@@ -222,7 +215,6 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
             instanceGoogleSheetsUploader.execute(toSendArray);
         } else {
             resultMessage = Collect.getInstance().getString(R.string.odk_permissions_fail);
-            uploadingComplete(null);
         }
     }
 
@@ -295,7 +287,7 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
         return false;
     }
 
-    private String formatOverallResultMessage(HashMap<String, String> resultMessagesByInstanceId) {
+    private String formatOverallResultMessage(Map<String, String> resultMessagesByInstanceId) {
         String message;
 
         if (resultMessagesByInstanceId == null) {
@@ -324,7 +316,7 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
         return message;
     }
 
-    private void showUploadStatusNotification(HashMap<String, String> resultMessagesByInstanceId, String message) {
+    private void showUploadStatusNotification(Map<String, String> resultMessagesByInstanceId, String message) {
         Intent notifyIntent = new Intent(Collect.getInstance(), NotificationActivity.class);
         notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         notifyIntent.putExtra(NotificationActivity.NOTIFICATION_TITLE, Collect.getInstance().getString(R.string.upload_results));
@@ -367,27 +359,5 @@ public class AutoSendWorker extends Worker implements InstanceUploaderListener {
         }
 
         return true;
-    }
-
-    @Override
-    public void progressUpdate(int progress, int total) {
-        // do nothing
-    }
-
-    @Override
-    public void authRequest(Uri url, HashMap<String, String> doneSoFar) {
-        // if we get an auth request, just fail
-        if (instanceServerUploader != null) {
-            instanceServerUploader.setUploaderListener(null);
-        }
-        if (instanceGoogleSheetsUploader != null) {
-            instanceGoogleSheetsUploader.setUploaderListener(null);
-        }
-
-        // TODO: this means if there was an auth failure, there will never be a retry until another
-        // form is finalized. This is unlike the implicit intent behavior where a retry would happen
-        // next time the connection toggled.
-        workResult = Result.FAILURE;
-        countDownLatch.countDown();
     }
 }

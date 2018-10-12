@@ -14,20 +14,16 @@
 
 package org.odk.collect.android.tasks;
 
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 
-import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.dto.Instance;
 import org.odk.collect.android.http.CollectServerClient.Outcome;
 import org.odk.collect.android.http.OpenRosaHttpInterface;
 import org.odk.collect.android.logic.PropertyManager;
-import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.utilities.ApplicationConstants;
 import org.odk.collect.android.utilities.WebCredentialsUtils;
@@ -42,8 +38,6 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import timber.log.Timber;
-
-import static org.odk.collect.android.tasks.InstanceServerUploaderFriend.*;
 
 /**
  * Background task for uploading completed forms.

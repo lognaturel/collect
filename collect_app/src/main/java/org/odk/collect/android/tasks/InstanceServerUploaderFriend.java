@@ -39,10 +39,6 @@ public class InstanceServerUploaderFriend {
     private OpenRosaHttpInterface httpInterface;
     private WebCredentialsUtils webCredentialsUtils;
 
-    public InstanceServerUploaderFriend() {
-
-    }
-
     public InstanceServerUploaderFriend(OpenRosaHttpInterface httpInterface, WebCredentialsUtils webCredentialsUtils) {
         this.httpInterface = httpInterface;
         this.webCredentialsUtils = webCredentialsUtils;

@@ -88,10 +88,13 @@ public class InstanceServerUploader extends InstanceUploader {
 
             InstanceServerUploaderFriend.UploadResult result = friend.uploadOneSubmission(instance,
                     urlString, uriRemap);
-            outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), result.getDisplayMessage());
 
             if (result.getAuthRequestingServerUri() != null) {
                 outcome.authRequestingServer = result.getAuthRequestingServerUri();
+            } else {
+                // Don't add the instance that caused an auth request to the map because that would
+                // mark it as completed and we want to retry
+                outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), result.getDisplayMessage());
             }
 
             if (result.isFatalError()) {

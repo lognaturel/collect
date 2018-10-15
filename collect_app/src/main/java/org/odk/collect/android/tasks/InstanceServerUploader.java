@@ -106,44 +106,6 @@ public class InstanceServerUploader extends InstanceUploader {
     }
 
     /**
-     * Returns a list of Instance objects corresponding to the database IDs passed in.
-     */
-    private List<Instance> getInstancesFromIds(Long... instanceDatabaseIds) {
-        List<Instance> instancesToUpload = new ArrayList<>();
-        InstancesDao dao = new InstancesDao();
-
-        // Split the queries to avoid exceeding SQLITE_MAX_VARIABLE_NUMBER
-        int counter = 0;
-        while (counter * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER < instanceDatabaseIds.length) {
-            int low = counter * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER;
-            int high = (counter + 1) * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER;
-            if (high > instanceDatabaseIds.length) {
-                high = instanceDatabaseIds.length;
-            }
-
-            StringBuilder selectionBuf = new StringBuilder(InstanceColumns._ID + " IN (");
-            String[] selectionArgs = new String[high - low];
-            for (int i = 0; i < (high - low); i++) {
-                if (i > 0) {
-                    selectionBuf.append(',');
-                }
-                selectionBuf.append('?');
-                selectionArgs[i] = instanceDatabaseIds[i + low].toString();
-            }
-
-            selectionBuf.append(')');
-            String selection = selectionBuf.toString();
-
-            Cursor c = dao.getInstancesCursor(selection, selectionArgs);
-            instancesToUpload.addAll(dao.getInstancesFromCursor(c));
-
-            counter++;
-        }
-        
-        return instancesToUpload;
-    }
-
-    /**
      * Returns the URL this instance should be submitted to with appended deviceId.
      *
      * If the upload was triggered by an external app and specified a custom URL, use that one.

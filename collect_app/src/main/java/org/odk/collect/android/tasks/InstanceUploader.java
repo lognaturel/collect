@@ -53,6 +53,7 @@ public abstract class InstanceUploader extends AsyncTask<Long, Integer, CollectS
                 } else {
                     stateListener.uploadingComplete(outcome.messagesByInstanceId);
 
+                    // Delete instances that were successfully sent and that need to be deleted
                     Set<String> keys = outcome.messagesByInstanceId.keySet();
                     Iterator<String> it = keys.iterator();
                     int count = keys.size();

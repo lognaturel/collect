@@ -94,6 +94,10 @@ public class InstanceServerUploaderFriend {
             return type.isFatalError();
         }
 
+        public boolean isSuccess() {
+            return type.isSuccess();
+        }
+
         @Nullable
         public Uri getAuthRequestingServerUri() {
             return authRequestingServerUri;

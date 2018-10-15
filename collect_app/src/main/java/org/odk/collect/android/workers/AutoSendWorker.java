@@ -28,6 +28,7 @@ import org.odk.collect.android.http.HttpHeadResult;
 import org.odk.collect.android.http.OpenRosaHttpInterface;
 import org.odk.collect.android.logic.PropertyManager;
 import org.odk.collect.android.tasks.InstanceServerUploaderFriend;
+import org.odk.collect.android.tasks.InstanceUploader;
 import org.odk.collect.android.utilities.IconUtils;
 import org.odk.collect.android.utilities.ResponseMessageParser;
 import org.odk.collect.android.utilities.WebCredentialsUtils;
@@ -128,16 +129,31 @@ public class AutoSendWorker extends Worker {
                 // kinds of problems until another form is finalized.
                 if (result.isFatalError()) {
                     return Result.FAILURE;
-                } else {
-                    resultMessagesByInstanceId.put(instance.getDatabaseId().toString(),
-                            result.getDisplayMessage());
+                }
+
+                resultMessagesByInstanceId.put(instance.getDatabaseId().toString(),
+                        result.getDisplayMessage());
+
+                // If the submission was successful, delete the instance if either the app-level
+                // delete preference is set or the form definition requests auto-deletion.
+                // TODO: this could take some time so might be better to do in a separate process,
+                // perhaps another worker. It also feels like this could fail and if so should be
+                // communicated to the user. Maybe successful delete should also be communicated?
+                if (result.isSuccess()) {
+                    if (InstanceUploader.isFormAutoDeleteEnabled(instance.getJrFormId(),
+                            (boolean) GeneralSharedPreferences
+                                    .getInstance().get(PreferenceKeys.KEY_DELETE_AFTER_SEND))) {
+                        Uri deleteForm = Uri.withAppendedPath(InstanceColumns.CONTENT_URI,
+                                instance.getDatabaseId().toString());
+                        Collect.getInstance().getContentResolver().delete(deleteForm, null, null);
+                    }
+
                 }
             }
         }
 
         String message = formatOverallResultMessage(resultMessagesByInstanceId);
         showUploadStatusNotification(resultMessagesByInstanceId, message);
-        // TODO: delete instances if auto-delete is on.
 
         return Result.SUCCESS;
     }

@@ -235,8 +235,7 @@ public class AutoSendWorker extends Worker {
     }
 
     /**
-     * Returns a list of longs representing the database ids of the instances that need to be
-     * auto-sent.
+     * Returns a list of instances that need to be auto-sent.
      */
     @NonNull
     private List<Instance> getInstancesToAutoSend(boolean isAutoSendAppSettingEnabled) {

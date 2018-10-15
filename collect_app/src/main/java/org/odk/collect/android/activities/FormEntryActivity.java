@@ -2476,16 +2476,17 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                 if (saveResult.isComplete()) {
                     formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_EXIT, 0, null, false, false);
                     formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_FINALIZE, 0, null, false, true);     // Force writing of audit since we are exiting
+
+                    // Request auto-send if app-wide auto-send is enabled or the form that was just
+                    // finalized specifies that it should always be auto-sent.
+                    String formId = getFormController().getFormDef().getMainInstance().getRoot().getAttributeValue("", "id");
+                    if (AutoSendWorker.formShouldBeAutoSent(formId, GeneralSharedPreferences.isAutoSendEnabled())) {
+                        requestAutoSend();
+                    }
                 } else {
                     formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_EXIT, 0, null, false, true);         // Force writing of audit since we are exiting
                 }
 
-                // Request auto-send if app-wide auto-send is enabled or the form that was just
-                // finalized specifies that it should always be auto-sent.
-                String formId = getFormController().getFormDef().getMainInstance().getRoot().getAttributeValue("", "id");
-                if (AutoSendWorker.formShouldBeAutoSent(formId, GeneralSharedPreferences.isAutoSendEnabled())) {
-                    requestAutoSend();
-                }
                 finishReturnInstance();
                 break;
             case SaveToDiskTask.SAVE_ERROR:

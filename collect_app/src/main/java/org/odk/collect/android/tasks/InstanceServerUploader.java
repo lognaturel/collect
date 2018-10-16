@@ -14,30 +14,20 @@
 
 package org.odk.collect.android.tasks;
 
-import android.database.Cursor;
 import android.net.Uri;
-import android.support.annotation.NonNull;
 
 import org.odk.collect.android.application.Collect;
-import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.dto.Instance;
 import org.odk.collect.android.http.CollectServerClient.Outcome;
 import org.odk.collect.android.http.OpenRosaHttpInterface;
 import org.odk.collect.android.logic.PropertyManager;
-import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
-import org.odk.collect.android.utilities.ApplicationConstants;
 import org.odk.collect.android.utilities.WebCredentialsUtils;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-
-import timber.log.Timber;
 
 /**
  * Background task for uploading completed forms.
@@ -84,7 +74,7 @@ public class InstanceServerUploader extends InstanceUploader {
 
             publishProgress(i + 1, instancesToUpload.size());
 
-            String urlString = getUrlToSubmitTo(instance, deviceId);
+            String urlString = friend.getOpenRosaUrlForSubmission(instance, deviceId, completeDestinationUrl);
 
             InstanceServerUploaderFriend.UploadResult result = friend.uploadOneSubmission(instance,
                     urlString, uriRemap);
@@ -103,36 +93,6 @@ public class InstanceServerUploader extends InstanceUploader {
         }
         
         return outcome;
-    }
-
-    /**
-     * Returns the URL this instance should be submitted to with appended deviceId.
-     *
-     * If the upload was triggered by an external app and specified a custom URL, use that one.
-     * Otherwise, use the submission URL configured in the form
-     * (https://opendatakit.github.io/xforms-spec/#submission-attributes). Finally, default to the
-     * URL configured at the submission level.
-     */
-    @NonNull
-    private String getUrlToSubmitTo(Instance currentInstance, String deviceId) {
-        String urlString;
-
-        if (completeDestinationUrl != null) {
-            urlString = completeDestinationUrl;
-        } else if (currentInstance.getSubmissionUri() != null) {
-            urlString = currentInstance.getSubmissionUri().trim();
-        } else {
-            urlString = friend.getServerSubmissionURL();
-        }
-
-        // add deviceID to request
-        try {
-            urlString += "?deviceID=" + URLEncoder.encode(deviceId != null ? deviceId : "", "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            Timber.i(e, "Error encoding URL for device id : %s", deviceId);
-        }
-
-        return urlString;
     }
 
     @Override

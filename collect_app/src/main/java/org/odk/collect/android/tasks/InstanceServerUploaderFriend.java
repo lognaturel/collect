@@ -22,8 +22,10 @@ import org.odk.collect.android.utilities.WebCredentialsUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -375,7 +377,38 @@ public class InstanceServerUploaderFriend {
         return files;
     }
 
-    public String getServerSubmissionURL() {
+    /**
+     * Returns the URL this instance should be submitted to with appended deviceId.
+     *
+     * If the upload was triggered by an external app and specified an override URL, use that one.
+     * Otherwise, use the submission URL configured in the form
+     * (https://opendatakit.github.io/xforms-spec/#submission-attributes). Finally, default to the
+     * URL configured at the app level.
+     */
+    @NonNull
+    public String getOpenRosaUrlForSubmission(Instance currentInstance, String deviceId,
+                                       String destinationOverride) {
+        String urlString;
+
+        if (destinationOverride != null) {
+            urlString = destinationOverride;
+        } else if (currentInstance.getSubmissionUri() != null) {
+            urlString = currentInstance.getSubmissionUri().trim();
+        } else {
+            urlString = getSettingsServerSubmissionURL();
+        }
+
+        // add deviceID to request
+        try {
+            urlString += "?deviceID=" + URLEncoder.encode(deviceId != null ? deviceId : "", "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            Timber.i(e, "Error encoding URL for device id : %s", deviceId);
+        }
+
+        return urlString;
+    }
+
+    private String getSettingsServerSubmissionURL() {
         Collect app = Collect.getInstance();
 
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(app);

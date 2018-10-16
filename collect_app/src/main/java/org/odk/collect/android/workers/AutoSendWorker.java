@@ -119,7 +119,7 @@ public class AutoSendWorker extends Worker {
             Map<Uri, Uri> uriRemap = new HashMap<>();
 
             for (Instance instance : toUpload) {
-                String urlString = getUrlToSubmitTo(instance, deviceId);
+                String urlString = uploader.getOpenRosaUrlForSubmission(instance, deviceId, null);
 
                 InstanceServerUploaderFriend.UploadResult result = uploader.uploadOneSubmission(instance,
                         urlString, uriRemap);
@@ -159,36 +159,6 @@ public class AutoSendWorker extends Worker {
     }
 
     /**
-     * Returns the URL this instance should be submitted to with appended deviceId.
-     *
-     * If the upload was triggered by an external app and specified a custom URL, use that one.
-     * Otherwise, use the submission URL configured in the form
-     * (https://opendatakit.github.io/xforms-spec/#submission-attributes). Finally, default to the
-     * URL configured at the submission level.
-     *
-     * TODO: combine with version used by async task. That one may have an override from an intent.
-     */
-    @NonNull
-    private String getUrlToSubmitTo(Instance currentInstance, String deviceId) {
-        String urlString;
-
-        if (currentInstance.getSubmissionUri() != null) {
-            urlString = currentInstance.getSubmissionUri().trim();
-        } else {
-            urlString = uploader.getServerSubmissionURL();
-        }
-
-        // add deviceID to request
-        try {
-            urlString += "?deviceID=" + URLEncoder.encode(deviceId != null ? deviceId : "", "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            Timber.i(e, "Error encoding URL for device id : %s", deviceId);
-        }
-
-        return urlString;
-    }
-
-    /**
      * Returns whether the currently-available connection type is included in the app-level auto-send
      * settings.
      *
@@ -211,27 +181,6 @@ public class AutoSendWorker extends Worker {
         return currentNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI
                 && sendwifi || currentNetworkInfo.getType() == ConnectivityManager.TYPE_MOBILE
                 && sendnetwork;
-    }
-
-
-    private void sendInstancesToGoogleSheets(Context context, Long[] toSendArray) {
-        if (PermissionUtils.checkIfGetAccountsPermissionGranted(context)) {
-            GoogleAccountsManager accountsManager = new GoogleAccountsManager(Collect.getInstance());
-
-            String googleUsername = accountsManager.getSelectedAccount();
-            if (googleUsername.isEmpty()) {
-                return;
-            }
-            accountsManager.getCredential().setSelectedAccountName(googleUsername);
-            instanceGoogleSheetsUploader = new InstanceGoogleSheetsUploader(accountsManager);
-            // TODO: instanceServerUploader is an AsyncTask so execute should be run off the main
-            // thread. This seems to work but unclear what behavior guarantees there are. We should
-            // move away from AsyncTask here. This requires a deeper rethink/refactor of the
-            // uploaders.
-            instanceGoogleSheetsUploader.execute(toSendArray);
-        } else {
-            resultMessage = Collect.getInstance().getString(R.string.odk_permissions_fail);
-        }
     }
 
     /**

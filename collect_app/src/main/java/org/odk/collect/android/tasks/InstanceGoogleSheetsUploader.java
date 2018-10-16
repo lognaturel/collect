@@ -94,16 +94,8 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
                     uploader.uploadOneSubmission(instance, new File(instance.getInstanceFilePath()),
                             form.getFormFilePath(), urlString);
 
-                    uploader.saveSuccessStatusToDatabase(instanceDatabaseUri);
-
                     outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), DEFAULT_SUCCESSFUL_TEXT);
-
-                    Collect.getInstance()
-                            .getDefaultTracker()
-                            .send(new HitBuilders.EventBuilder()
-                                    .setCategory("Submission")
-                                    .setAction("HTTP-Sheets")
-                                    .build());
+                    uploader.saveSuccessStatusToDatabase(instanceDatabaseUri);
                 } catch (InstanceGoogleSheetsUploaderFriend.UploadException e) {
                     Timber.e(e);
                     outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(),

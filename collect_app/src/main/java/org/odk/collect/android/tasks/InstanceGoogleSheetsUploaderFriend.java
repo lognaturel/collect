@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 
+import com.google.android.gms.analytics.HitBuilders;
 import com.google.android.gms.auth.GoogleAuthException;
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.UserRecoverableAuthException;
@@ -93,7 +94,7 @@ public class InstanceGoogleSheetsUploaderFriend {
      * Returns whether the submissions folder previously existed or was successfully created. False
      * if multiple folders match or there was another exception.
      */
-    boolean submissionsFolderExistsAndIsUnique() {
+    public boolean submissionsFolderExistsAndIsUnique() {
         try {
             driveHelper.createOrGetIDOfSubmissionsFolder();
             return true;
@@ -103,7 +104,11 @@ public class InstanceGoogleSheetsUploaderFriend {
         }
     }
 
-     void uploadOneSubmission(Instance instance, File instanceFile, String formFilePath, String spreadsheetUrl) throws UploadException {
+    /**
+     * Uploads all files associated with an instance to the specified spreadsheet. Log an analytics
+     * event in case of success.
+     */
+     public void uploadOneSubmission(Instance instance, File instanceFile, String formFilePath, String spreadsheetUrl) throws UploadException {
         TreeElement instanceElement = getInstanceElement(formFilePath, instanceFile);
         setUpSpreadsheet(spreadsheetUrl);
         if (hasRepeatableGroups(instanceElement)) {
@@ -114,6 +119,13 @@ public class InstanceGoogleSheetsUploaderFriend {
             key = PropertyUtils.genUUID();
         }
         insertRows(instance, instanceElement, null, key, instanceFile, spreadsheet.getSheets().get(0).getProperties().getTitle());
+
+        Collect.getInstance()
+                 .getDefaultTracker()
+                 .send(new HitBuilders.EventBuilder()
+                         .setCategory("Submission")
+                         .setAction("HTTP-Sheets")
+                         .build());
     }
 
 
@@ -545,7 +557,7 @@ public class InstanceGoogleSheetsUploaderFriend {
                 : spreadsheet.getSpreadsheetUrl().substring(0, spreadsheet.getSpreadsheetUrl().lastIndexOf('/') + 1) + "edit#gid=" + sheetId;
     }
 
-    String getUrlToSubmitTo(Instance instance) {
+    public String getUrlToSubmitTo(Instance instance) {
         String urlString = instance.getSubmissionUri();
         // if we didn't find one in the content provider, try to get from settings
         return urlString == null
@@ -571,13 +583,13 @@ public class InstanceGoogleSheetsUploaderFriend {
         }
     }
 
-    void saveFailedStatusToDatabase(Uri instanceDatabaseUri) {
+    public void saveFailedStatusToDatabase(Uri instanceDatabaseUri) {
         ContentValues contentValues = new ContentValues();
         contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
         Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
     }
 
-    void saveSuccessStatusToDatabase(Uri instanceDatabaseUri) {
+    public void saveSuccessStatusToDatabase(Uri instanceDatabaseUri) {
         ContentValues contentValues = new ContentValues();
         contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
         Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);

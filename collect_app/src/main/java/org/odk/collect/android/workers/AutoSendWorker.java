@@ -11,7 +11,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 
 import org.odk.collect.android.R;
@@ -22,15 +21,12 @@ import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.dto.Form;
 import org.odk.collect.android.dto.Instance;
 import org.odk.collect.android.http.HttpClientConnection;
-import org.odk.collect.android.http.HttpCredentialsInterface;
-import org.odk.collect.android.http.HttpGetResult;
-import org.odk.collect.android.http.HttpHeadResult;
-import org.odk.collect.android.http.OpenRosaHttpInterface;
 import org.odk.collect.android.logic.PropertyManager;
+import org.odk.collect.android.provider.InstanceProviderAPI;
+import org.odk.collect.android.tasks.InstanceGoogleSheetsUploaderFriend;
 import org.odk.collect.android.tasks.InstanceServerUploaderFriend;
 import org.odk.collect.android.tasks.InstanceUploader;
 import org.odk.collect.android.utilities.IconUtils;
-import org.odk.collect.android.utilities.ResponseMessageParser;
 import org.odk.collect.android.utilities.WebCredentialsUtils;
 import org.odk.collect.android.utilities.gdrive.GoogleAccountsManager;
 import org.odk.collect.android.utilities.InstanceUploaderUtils;
@@ -41,9 +37,7 @@ import org.odk.collect.android.tasks.InstanceGoogleSheetsUploader;
 import org.odk.collect.android.utilities.PermissionUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,18 +45,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 import androidx.work.Worker;
 import timber.log.Timber;
 
 import static org.odk.collect.android.provider.FormsProviderAPI.FormsColumns.AUTO_SEND;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes.FORMS_UPLOADED_NOTIFICATION;
+import static org.odk.collect.android.utilities.InstanceUploaderUtils.DEFAULT_SUCCESSFUL_TEXT;
 
 public class AutoSendWorker extends Worker {
-    private InstanceServerUploaderFriend uploader;
-    private InstanceGoogleSheetsUploader instanceGoogleSheetsUploader;
-
     private String resultMessage;
 
     /**
@@ -83,9 +74,6 @@ public class AutoSendWorker extends Worker {
     @Override
     @SuppressLint("WrongThread")
     public Result doWork() {
-        uploader = new InstanceServerUploaderFriend(new HttpClientConnection(),
-                new WebCredentialsUtils());
-
         ConnectivityManager manager = (ConnectivityManager) getApplicationContext().getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkInfo currentNetworkInfo = manager.getActiveNetworkInfo();
@@ -111,8 +99,70 @@ public class AutoSendWorker extends Worker {
         Map<String, String> resultMessagesByInstanceId = new HashMap<>();
 
         if (protocol.equals(getApplicationContext().getString(R.string.protocol_google_sheets))) {
-            // sendInstancesToGoogleSheets(getApplicationContext(), toSendArray);
+            if (PermissionUtils.checkIfGetAccountsPermissionGranted(getApplicationContext())) {
+                GoogleAccountsManager accountsManager = new GoogleAccountsManager(Collect.getInstance());
+
+                String googleUsername = accountsManager.getSelectedAccount();
+                if (googleUsername.isEmpty()) {
+                    return Result.FAILURE;
+                }
+                accountsManager.getCredential().setSelectedAccountName(googleUsername);
+                InstanceGoogleSheetsUploaderFriend uploader = new InstanceGoogleSheetsUploaderFriend(accountsManager);
+                if (!uploader.submissionsFolderExistsAndIsUnique()) {
+                    return Result.FAILURE;
+                }
+
+                for (Instance instance : toUpload) {
+                    String urlString = uploader.getUrlToSubmitTo(instance);
+
+                    // Get corresponding blank form and verify there is exactly 1
+                    FormsDao dao = new FormsDao();
+                    Cursor formCursor = dao.getFormsCursor(instance.getJrFormId(), instance.getJrVersion());
+                    List<Form> forms = dao.getFormsFromCursor(formCursor);
+
+                    if (forms.size() != 1) {
+                        resultMessagesByInstanceId.put(instance.getDatabaseId().toString(),
+                                Collect.getInstance().getString(R.string.not_exactly_one_blank_form_for_this_form_id));
+                    } else {
+                        Form form = forms.get(0);
+                        Uri instanceDatabaseUri = Uri.withAppendedPath(InstanceProviderAPI.InstanceColumns.CONTENT_URI,
+                                instance.getDatabaseId().toString());
+
+                        try {
+                            uploader.uploadOneSubmission(instance, new File(instance.getInstanceFilePath()),
+                                    form.getFormFilePath(), urlString);
+                            resultMessagesByInstanceId.put(instance.getDatabaseId().toString(),
+                                    DEFAULT_SUCCESSFUL_TEXT);
+                            uploader.saveSuccessStatusToDatabase(instanceDatabaseUri);
+
+                            // If the submission was successful, delete the instance if either the app-level
+                            // delete preference is set or the form definition requests auto-deletion.
+                            // TODO: this could take some time so might be better to do in a separate process,
+                            // perhaps another worker. It also feels like this could fail and if so should be
+                            // communicated to the user. Maybe successful delete should also be communicated?
+                            if (InstanceUploader.isFormAutoDeleteEnabled(instance.getJrFormId(),
+                                    (boolean) GeneralSharedPreferences
+                                            .getInstance().get(PreferenceKeys.KEY_DELETE_AFTER_SEND))) {
+                                Uri deleteForm = Uri.withAppendedPath(InstanceColumns.CONTENT_URI,
+                                        instance.getDatabaseId().toString());
+                                Collect.getInstance().getContentResolver().delete(deleteForm, null, null);
+                            }
+                        } catch (InstanceGoogleSheetsUploaderFriend.UploadException e) {
+                            Timber.e(e);
+                            resultMessagesByInstanceId.put(instance.getDatabaseId().toString(),
+                                    e.getMessage() != null ? e.getMessage() : e.getCause().getMessage());
+
+                            uploader.saveFailedStatusToDatabase(instanceDatabaseUri);
+                        }
+                    }
+                }
+            } else {
+                resultMessage = Collect.getInstance().getString(R.string.odk_permissions_fail);
+            }
         } else if (protocol.equals(getApplicationContext().getString(R.string.protocol_odk_default))) {
+            InstanceServerUploaderFriend uploader = new InstanceServerUploaderFriend(new HttpClientConnection(),
+                    new WebCredentialsUtils());
+
             String deviceId = new PropertyManager(Collect.getInstance().getApplicationContext())
                     .getSingularProperty(PropertyManager.withUri(PropertyManager.PROPMGR_DEVICE_ID));
 
@@ -147,7 +197,6 @@ public class AutoSendWorker extends Worker {
                                 instance.getDatabaseId().toString());
                         Collect.getInstance().getContentResolver().delete(deleteForm, null, null);
                     }
-
                 }
             }
         }

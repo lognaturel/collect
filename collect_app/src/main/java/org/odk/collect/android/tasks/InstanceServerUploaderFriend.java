@@ -153,7 +153,10 @@ public class InstanceServerUploaderFriend {
     }
 
     /**
-     * Uploads all files associated with an instance to the specified URL.
+     * Uploads all files associated with an instance to the specified URL. Saves the final status to
+     * the database. Log an analytics event in case of success.
+     *
+     * TODO: this should probably not write to the database
      *
      * @return false if credentials are required and we should terminate immediately.
      */

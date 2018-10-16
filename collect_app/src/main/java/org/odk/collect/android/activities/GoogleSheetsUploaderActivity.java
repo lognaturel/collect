@@ -52,7 +52,7 @@ import java.util.Set;
 
 import timber.log.Timber;
 
-import static org.odk.collect.android.tasks.InstanceGoogleSheetsUploader.REQUEST_AUTHORIZATION;
+import static org.odk.collect.android.utilities.gdrive.GoogleAccountsManager.REQUEST_AUTHORIZATION;
 import static org.odk.collect.android.utilities.gdrive.GoogleAccountsManager.REQUEST_ACCOUNT_PICKER;
 
 public class GoogleSheetsUploaderActivity extends CollectAbstractActivity implements InstanceUploaderListener,

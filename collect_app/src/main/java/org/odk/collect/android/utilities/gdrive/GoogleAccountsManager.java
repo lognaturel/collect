@@ -52,6 +52,8 @@ import static org.odk.collect.android.utilities.PermissionUtils.requestGetAccoun
 public class GoogleAccountsManager implements GoogleApiClient.OnConnectionFailedListener {
 
     public static final int REQUEST_ACCOUNT_PICKER = 1000;
+    public static final int REQUEST_AUTHORIZATION = 1001;
+
     private static final int RESOLVE_CONNECTION_REQUEST_CODE = 5555;
 
     @Nullable

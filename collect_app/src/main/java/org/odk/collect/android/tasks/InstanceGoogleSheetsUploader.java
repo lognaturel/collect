@@ -40,7 +40,8 @@ import org.javarosa.xform.util.XFormUtils;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.FormsDao;
-import org.odk.collect.android.dao.InstancesDao;
+import org.odk.collect.android.dto.Form;
+import org.odk.collect.android.dto.Instance;
 import org.odk.collect.android.exception.BadUrlException;
 import org.odk.collect.android.exception.MultipleFoldersFoundException;
 import org.odk.collect.android.http.CollectServerClient.Outcome;
@@ -48,10 +49,7 @@ import org.odk.collect.android.utilities.UrlUtils;
 import org.odk.collect.android.utilities.gdrive.DriveHelper;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.preferences.PreferenceKeys;
-import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
 import org.odk.collect.android.provider.InstanceProviderAPI;
-import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
-import org.odk.collect.android.utilities.ApplicationConstants;
 import org.odk.collect.android.utilities.gdrive.GoogleAccountsManager;
 import org.odk.collect.android.utilities.gdrive.SheetsHelper;
 
@@ -73,9 +71,6 @@ import timber.log.Timber;
 import static org.odk.collect.android.logic.FormController.INSTANCE_ID;
 import static org.odk.collect.android.utilities.InstanceUploaderUtils.DEFAULT_SUCCESSFUL_TEXT;
 
-/**
- * @author carlhartung (chartung@nafundi.com)
- */
 public class InstanceGoogleSheetsUploader extends InstanceUploader {
 
     public static final int REQUEST_AUTHORIZATION = 1001;
@@ -95,8 +90,6 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
 
     private boolean authFailed;
 
-    private String jrFormId;
-
     private Spreadsheet spreadsheet;
 
     public InstanceGoogleSheetsUploader(GoogleAccountsManager accountsManager) {
@@ -108,39 +101,10 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
     @Override
     protected Outcome doInBackground(Long... instanceIdsToUpload) {
         final Outcome outcome = new Outcome();
-        int counter = 0;
 
+        String token = null;
         try {
-            while (counter * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER < instanceIdsToUpload.length) {
-                String token = accountsManager.getCredential().getToken();
-
-                //Immediately invalidate so we get a different one if we have to try again
-                GoogleAuthUtil.invalidateToken(accountsManager.getContext(), token);
-
-                // check if root folder exists, if not then create one
-                driveHelper.getIDOfFolderWithName(GOOGLE_DRIVE_ROOT_FOLDER, null, true);
-
-                int low = counter * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER;
-                int high = (counter + 1) * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER;
-                if (high > instanceIdsToUpload.length) {
-                    high = instanceIdsToUpload.length;
-                }
-
-                StringBuilder selectionBuf = new StringBuilder(InstanceColumns._ID + " IN (");
-                String[] selectionArgs = new String[high - low];
-                for (int i = 0; i < (high - low); i++) {
-                    if (i > 0) {
-                        selectionBuf.append(',');
-                    }
-                    selectionBuf.append('?');
-                    selectionArgs[i] = instanceIdsToUpload[i + low].toString();
-                }
-
-                selectionBuf.append(')');
-
-                outcome.messagesByInstanceId.putAll(uploadInstances(selectionBuf.toString(), selectionArgs, low, instanceIdsToUpload.length));
-                counter++;
-            }
+            token = accountsManager.getCredential().getToken();
         } catch (UserRecoverableAuthException e) {
             Activity activity = accountsManager.getActivity();
             if (activity != null) {
@@ -150,73 +114,68 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
         } catch (IOException | GoogleAuthException e) {
             Timber.e(e);
             authFailed = true;
-        } catch (MultipleFoldersFoundException e) {
-            Timber.e(e);
+        }
+
+        // Immediately invalidate so we get a different one if we have to try again
+        GoogleAuthUtil.invalidateToken(accountsManager.getContext(), token);
+
+        // Check if root folder exists, if not then create one
+        try {
+            driveHelper.getIDOfFolderWithName(GOOGLE_DRIVE_ROOT_FOLDER, null, true);
+        } catch (IOException | MultipleFoldersFoundException e) {
+            Timber.e(e,"Exception getting or creating root folder for submissions");
+        }
+
+        List<Instance> instancesToUpload = getInstancesFromIds(instanceIdsToUpload);
+
+        for (int i = 0; i < instancesToUpload.size(); i++) {
+            if (isCancelled()) {
+                return outcome;
+            }
+
+            Instance instance = instancesToUpload.get(i);
+
+            publishProgress(i + 1, instancesToUpload.size());
+
+            FormsDao dao = new FormsDao();
+            Cursor formCursor = dao.getFormsCursor(instance.getJrFormId(), instance.getJrVersion());
+            List<Form> forms = dao.getFormsFromCursor(formCursor);
+
+            if (forms.size() != 1) {
+                outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(),
+                        Collect.getInstance().getString(R.string.not_exactly_one_blank_form_for_this_form_id));
+            } else {
+                Form form = forms.get(0);
+                Uri instanceDatabaseUri = Uri.withAppendedPath(InstanceProviderAPI.InstanceColumns.CONTENT_URI,
+                        instance.getDatabaseId().toString());
+
+                try {
+                    uploadOneSubmission(instance, new File(instance.getInstanceFilePath()),
+                            form.getFormFilePath(), getUrlToSubmitTo(instance));
+
+                    saveSuccessStatusToDatabase(instanceDatabaseUri);
+
+                    outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(), DEFAULT_SUCCESSFUL_TEXT);
+
+                    Collect.getInstance()
+                            .getDefaultTracker()
+                            .send(new HitBuilders.EventBuilder()
+                                    .setCategory("Submission")
+                                    .setAction("HTTP-Sheets")
+                                    .build());
+                } catch (UploadException e) {
+                    Timber.e(e);
+                    outcome.messagesByInstanceId.put(instance.getDatabaseId().toString(),
+                            e.getMessage() != null ? e.getMessage() : e.getCause().getMessage());
+
+                    saveFailedStatusToDatabase(instanceDatabaseUri);
+                }
+            }
         }
         return outcome;
     }
 
-    private Map<String, String> uploadInstances(String selection, String[] selectionArgs, int low, int instanceCount) {
-        final Map<String, String> messagesByInstanceId = new HashMap<>();
-
-        try (Cursor cursor = new InstancesDao().getInstancesCursor(selection, selectionArgs)) {
-            if (cursor.getCount() > 0) {
-                cursor.moveToPosition(-1);
-                while (cursor.moveToNext()) {
-                    if (isCancelled()) {
-                        return messagesByInstanceId;
-                    }
-                    final String id = cursor.getString(cursor.getColumnIndex(InstanceColumns._ID));
-                    jrFormId = cursor.getString(cursor.getColumnIndex(InstanceColumns.JR_FORM_ID));
-                    Uri toUpdate = Uri.withAppendedPath(InstanceColumns.CONTENT_URI, id);
-                    ContentValues cv = new ContentValues();
-
-                    Cursor formCursor = new FormsDao().getFormsCursorForFormId(jrFormId);
-                    String md5 = null;
-                    String formFilePath = null;
-                    if (formCursor.getCount() > 0) {
-                        formCursor.moveToFirst();
-                        md5 = formCursor
-                                .getString(formCursor.getColumnIndex(FormsColumns.MD5_HASH));
-                        formFilePath = formCursor.getString(formCursor
-                                .getColumnIndex(FormsColumns.FORM_FILE_PATH));
-                    }
-
-                    if (md5 == null) {
-                        // fail and exit
-                        Timber.e("no md5");
-                        return messagesByInstanceId;
-                    }
-
-                    publishProgress(cursor.getPosition() + 1 + low, instanceCount);
-                    String instance = cursor.getString(cursor
-                            .getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH));
-
-                    try {
-                        uploadOneInstance(new File(instance), formFilePath, getGoogleSheetsUrl(cursor));
-                        cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
-                        Collect.getInstance().getContentResolver().update(toUpdate, cv, null, null);
-                        messagesByInstanceId.put(id, DEFAULT_SUCCESSFUL_TEXT);
-
-                        Collect.getInstance()
-                                .getDefaultTracker()
-                                .send(new HitBuilders.EventBuilder()
-                                        .setCategory("Submission")
-                                        .setAction("HTTP-Sheets")
-                                        .build());
-                    } catch (UploadException e) {
-                        Timber.e(e);
-                        messagesByInstanceId.put(id, e.getMessage() != null ? e.getMessage() : e.getCause().getMessage());
-                        cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
-                        Collect.getInstance().getContentResolver().update(toUpdate, cv, null, null);
-                    }
-                }
-            }
-        }
-        return messagesByInstanceId;
-    }
-
-    private void uploadOneInstance(File instanceFile, String formFilePath, String spreadsheetUrl) throws UploadException {
+    private void uploadOneSubmission(Instance instance, File instanceFile, String formFilePath, String spreadsheetUrl) throws UploadException {
         TreeElement instanceElement = getInstanceElement(formFilePath, instanceFile);
         setUpSpreadsheet(spreadsheetUrl);
         if (hasRepeatableGroups(instanceElement)) {
@@ -226,18 +185,19 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
         if (key == null) {
             key = PropertyUtils.genUUID();
         }
-        insertRows(instanceElement, null, key, instanceFile, spreadsheet.getSheets().get(0).getProperties().getTitle());
+        insertRows(instance, instanceElement, null, key, instanceFile, spreadsheet.getSheets().get(0).getProperties().getTitle());
     }
 
-    private void insertRows(TreeElement element, String parentKey, String key, File instanceFile, String sheetTitle)
+
+    private void insertRows(Instance instance, TreeElement element, String parentKey, String key, File instanceFile, String sheetTitle)
             throws UploadException {
-        insertRow(element, parentKey, key, instanceFile, sheetTitle);
+        insertRow(instance, element, parentKey, key, instanceFile, sheetTitle);
 
         int repeatIndex = 0;
         for (int i = 0; i < element.getNumChildren(); i++) {
             TreeElement child = element.getChildAt(i);
             if (child.isRepeatable() && child.getMultiplicity() != TreeReference.INDEX_TEMPLATE) {
-                insertRows(child, key, getKeyBasedOnParentKey(key, child.getName(), repeatIndex++), instanceFile, getElementTitle(child));
+                insertRows(instance, child, key, getKeyBasedOnParentKey(key, child.getName(), repeatIndex++), instanceFile, getElementTitle(child));
             }
             if (child.getMultiplicity() == TreeReference.INDEX_TEMPLATE) {
                 repeatIndex = 0;
@@ -252,7 +212,7 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
                 + "[" + (repeatIndex + 1) + "]";
     }
 
-    private void insertRow(TreeElement element, String parentKey, String key, File instanceFile, String sheetTitle)
+    private void insertRow(Instance instance, TreeElement element, String parentKey, String key, File instanceFile, String sheetTitle)
             throws UploadException {
 
         if (isCancelled()) {
@@ -286,7 +246,7 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
                 sheetCells = getSheetCells(sheetTitle); // read sheet cells again to update
             }
 
-            HashMap<String, String> answers = getAnswers(element, columnTitles, instanceFile, parentKey, key);
+            HashMap<String, String> answers = getAnswers(instance, element, columnTitles, instanceFile, parentKey, key);
 
             if (isCancelled()) {
                 throw new UploadException(Collect.getInstance().getString(R.string.instance_upload_cancelled));
@@ -332,7 +292,8 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
         return false;
     }
 
-    private String uploadMediaFile(File instanceFile, String fileName) throws UploadException {
+    private String uploadMediaFile(Instance instance, String fileName) throws UploadException {
+        File instanceFile = new File(instance.getInstanceFilePath());
         String filePath = instanceFile.getParentFile() + "/" + fileName;
         File toUpload = new File(filePath);
 
@@ -343,7 +304,7 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
 
         String folderId;
         try {
-            folderId = driveHelper.createOrGetIDOfFolderWithName(jrFormId);
+            folderId = driveHelper.createOrGetIDOfFolderWithName(instance.getJrFormId());
         } catch (IOException | MultipleFoldersFoundException e) {
             Timber.e(e);
             throw new UploadException(e.getMessage());
@@ -387,6 +348,7 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
         return false;
     }
 
+    // Return an UploadResult?
     private void createSheetsIfNeeded(TreeElement element) throws UploadException {
         Set<String> sheetTitles = getSheetTitles(element);
 
@@ -414,7 +376,7 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
         return sheetTitles;
     }
 
-    private HashMap<String, String> getAnswers(TreeElement element, List<Object> columnTitles, File instanceFile, String parentKey, String key)
+    private HashMap<String, String> getAnswers(Instance instance, TreeElement element, List<Object> columnTitles, File instanceFile, String parentKey, String key)
             throws UploadException {
         HashMap<String, String> answers = new HashMap<>();
         for (TreeElement childElement : getChildElements(element)) {
@@ -424,7 +386,7 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
             } else {
                 String answer = childElement.getValue() != null ? childElement.getValue().getDisplayText() : "";
                 if (new File(instanceFile.getParentFile() + "/" + answer).isFile()) {
-                    String mediaUrl = uploadMediaFile(instanceFile, answer);
+                    String mediaUrl = uploadMediaFile(instance, answer);
                     answers.put(elementTitle, mediaUrl);
                 } else {
                     if (isLocationValid(answer)) {
@@ -663,9 +625,8 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
                 : spreadsheet.getSpreadsheetUrl().substring(0, spreadsheet.getSpreadsheetUrl().lastIndexOf('/') + 1) + "edit#gid=" + sheetId;
     }
 
-    private String getGoogleSheetsUrl(Cursor cursor) {
-        int subIdx = cursor.getColumnIndex(InstanceColumns.SUBMISSION_URI);
-        String urlString = cursor.isNull(subIdx) ? null : cursor.getString(subIdx);
+    private String getUrlToSubmitTo(Instance instance) {
+        String urlString = instance.getSubmissionUri();
         // if we didn't find one in the content provider, try to get from settings
         return urlString == null
                 ? (String) GeneralSharedPreferences.getInstance().get(PreferenceKeys.KEY_GOOGLE_SHEETS_URL)
@@ -696,5 +657,17 @@ public class InstanceGoogleSheetsUploader extends InstanceUploader {
         UploadException(Throwable cause) {
             super(cause);
         }
+    }
+
+    private void saveFailedStatusToDatabase(Uri instanceDatabaseUri) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
+        Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
+    }
+
+    private void saveSuccessStatusToDatabase(Uri instanceDatabaseUri) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
+        Collect.getInstance().getContentResolver().update(instanceDatabaseUri, contentValues, null, null);
     }
 }

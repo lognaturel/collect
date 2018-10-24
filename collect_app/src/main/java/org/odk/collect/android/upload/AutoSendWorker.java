@@ -92,10 +92,6 @@ public class AutoSendWorker extends Worker {
 
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)
                 || !(networkTypeMatchesAutoSendSetting(currentNetworkInfo) || atLeastOneFormSpecifiesAutoSend())) {
-            if (!networkTypeMatchesAutoSendSetting(currentNetworkInfo)) {
-                return Result.RETRY;
-            }
-
             return Result.FAILURE;
         }
 

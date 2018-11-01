@@ -10,6 +10,8 @@ import com.burgstaller.okhttp.CachingAuthenticatorDecorator;
 import com.burgstaller.okhttp.DispatchingAuthenticator;
 import com.burgstaller.okhttp.basic.BasicAuthenticator;
 import com.burgstaller.okhttp.digest.CachingAuthenticator;
+import com.burgstaller.okhttp.digest.Credentials;
+import com.burgstaller.okhttp.digest.DigestAuthenticator;
 
 import org.apache.commons.io.IOUtils;
 import org.odk.collect.android.BuildConfig;
@@ -32,9 +34,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
-import com.burgstaller.okhttp.digest.Credentials;
-import com.burgstaller.okhttp.digest.DigestAuthenticator;
 
 import okhttp3.Headers;
 import okhttp3.MediaType;
@@ -67,7 +66,7 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
     @NonNull
     @Override
     public HttpGetResult executeGetRequest(@NonNull URI uri, @Nullable String contentType, @Nullable HttpCredentialsInterface credentials) throws Exception {
-        OkHttpClient client = createOkHttpClient(credentials, uri);
+        OkHttpClient client = getOkHttpClient(credentials, uri);
         Request request = buildGetRequest(uri);
 
         Response response = client.newCall(request).execute();
@@ -127,7 +126,7 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
     @NonNull
     @Override
     public HttpHeadResult executeHeadRequest(@NonNull URI uri, @Nullable HttpCredentialsInterface credentials) throws Exception {
-        OkHttpClient client = createOkHttpClient(credentials, uri);
+        OkHttpClient client = getOkHttpClient(credentials, uri);
         Request request = buildHeadRequest(uri);
 
         Timber.i("Issuing HEAD request to: %s", uri.toString());
@@ -153,7 +152,7 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
     @Override
     public HttpPostResult executePostRequest(@NonNull URI uri, @Nullable HttpCredentialsInterface credentials) throws Exception {
         HttpPostResult postResult;
-        OkHttpClient client = createOkHttpClient(credentials, uri);
+        OkHttpClient client = getOkHttpClient(credentials, uri);
         Request request = buildPostRequest(uri, multipartBody);
         Response response = client.newCall(request).execute();
 
@@ -231,7 +230,19 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
         return postResult;
     }
 
-    private OkHttpClient createOkHttpClient(@Nullable HttpCredentialsInterface credentials, URI uri) {
+    /**
+     * Returns a shared OkHttpClient and sets the {@link #httpClient} and {@link #httpCredentials}
+     * fields.
+     *
+     * The {@link #httpClient} field is:
+     * - set and configured if previously null
+     * - left unchanged if the current request's credentials match the credentials from the last
+     *   request
+     * - changed to reflect new credentials if the current request's credentials are different from
+     *   the last request's
+     */
+
+    private OkHttpClient getOkHttpClient(@Nullable HttpCredentialsInterface credentials, URI uri) {
         OkHttpClient.Builder builder;
 
         if (httpClient != null) {

@@ -272,7 +272,7 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
             return true;
         } else if (httpCredentials == null || credentials == null) {
             return false;
-        } else if (httpCredentials.isEqualTo(credentials)) {
+        } else if (httpCredentials.equals(credentials)) {
             return true;
         }
 

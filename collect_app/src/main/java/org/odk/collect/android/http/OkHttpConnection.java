@@ -58,10 +58,26 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
     private static final String DATE_HEADER = "Date";
     private static final String HTTP_CONTENT_TYPE_TEXT_XML = "text/xml";
 
+    /**
+     * Shared client object used for all HTTP requests. Credentials are set on a per-request basis.
+     */
     private static OkHttpClient httpClient;
     private static HttpCredentialsInterface httpCredentials;
 
     MultipartBody multipartBody;
+
+    public OkHttpConnection() {
+        if (httpClient == null) {
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+
+            httpClient = builder
+                    .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                    .writeTimeout(WRITE_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                    .readTimeout(READ_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                    .followRedirects(true)
+                    .build();
+        }
+    }
 
     @NonNull
     @Override
@@ -235,7 +251,6 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
      * fields.
      *
      * The {@link #httpClient} field is:
-     * - set and configured if previously null
      * - left unchanged if the current request's credentials match the credentials from the last
      *   request
      * - changed to reflect new credentials if the current request's credentials are different from
@@ -243,27 +258,13 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
      */
 
     private OkHttpClient getOkHttpClient(@Nullable HttpCredentialsInterface credentials, URI uri) {
-        OkHttpClient.Builder builder;
-
-        if (httpClient != null) {
-            if (sameCredentials(credentials)) {
-                return httpClient;
-            }
-            builder = httpClient.newBuilder();
-        } else {
-            builder = new OkHttpClient.Builder();
+        if (sameCredentials(credentials)) {
+            return httpClient;
         }
 
+        OkHttpClient.Builder builder = httpClient.newBuilder();
         addCredentials(builder, credentials, uri.getScheme().equalsIgnoreCase("https"));
         httpCredentials = credentials;
-
-        httpClient = builder
-                    .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .writeTimeout(WRITE_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .readTimeout(READ_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .followRedirects(true)
-                    .build();
-
         return httpClient;
     }
 
@@ -294,8 +295,9 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
 
             DispatchingAuthenticator authenticator = daBuilder.build();
 
-            builder.authenticator(new CachingAuthenticatorDecorator(authenticator, authCache))
-                    .addInterceptor(new AuthenticationCacheInterceptor(authCache));
+            httpClient = builder.authenticator(new CachingAuthenticatorDecorator(authenticator, authCache))
+                    .addInterceptor(new AuthenticationCacheInterceptor(authCache))
+                    .build();
         }
     }
 

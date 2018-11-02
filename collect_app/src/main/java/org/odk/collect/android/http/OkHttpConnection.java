@@ -262,8 +262,7 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
             return httpClient;
         }
 
-        OkHttpClient.Builder builder = httpClient.newBuilder();
-        addCredentials(builder, credentials, uri.getScheme().equalsIgnoreCase("https"));
+        addCredentials(credentials, uri.getScheme().equalsIgnoreCase("https"));
         httpCredentials = credentials;
         return httpClient;
     }
@@ -280,22 +279,30 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
         return false;
     }
 
-    private void addCredentials(OkHttpClient.Builder builder, @Nullable HttpCredentialsInterface credentials, Boolean sslEnabled) {
+    /**
+     * If the provided credentials are non-null, sets the {@link #httpClient} to authenticate using
+     * the provided credentials.
+     *
+     * If authentication is needed, always configure digest auth. If SSL is enabled, also configure
+     * basic auth.
+     */
+    private void addCredentials(@Nullable HttpCredentialsInterface credentials, Boolean sslEnabled) {
         if (credentials != null) {
             final Map<String, CachingAuthenticator> authCache = new ConcurrentHashMap<>();
             Credentials cred = new Credentials(credentials.getUsername(), credentials.getPassword());
 
-            DispatchingAuthenticator.Builder daBuilder = new DispatchingAuthenticator.Builder();
+            DispatchingAuthenticator.Builder authenticatorBuilder = new DispatchingAuthenticator.Builder();
 
             if (sslEnabled) {
-                daBuilder.with("basic", new BasicAuthenticator(cred));
+                authenticatorBuilder.with("basic", new BasicAuthenticator(cred));
             }
 
-            daBuilder.with("digest", new DigestAuthenticator(cred));
+            authenticatorBuilder.with("digest", new DigestAuthenticator(cred));
 
-            DispatchingAuthenticator authenticator = daBuilder.build();
+            DispatchingAuthenticator authenticator = authenticatorBuilder.build();
 
-            httpClient = builder.authenticator(new CachingAuthenticatorDecorator(authenticator, authCache))
+            OkHttpClient.Builder clientBuilder = httpClient.newBuilder();
+            httpClient = clientBuilder.authenticator(new CachingAuthenticatorDecorator(authenticator, authCache))
                     .addInterceptor(new AuthenticationCacheInterceptor(authCache))
                     .build();
         }

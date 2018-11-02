@@ -62,30 +62,48 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
      * Shared client object used for all HTTP requests. Credentials are set on a per-request basis.
      */
     private static OkHttpClient httpClient;
-    private static HttpCredentialsInterface httpCredentials;
+
+    /**
+     * The credentials used for the last request. When a new request is made, this is used to see
+     * whether the {@link #httpClient} credentials need to be changed.
+     */
+    private static HttpCredentialsInterface lastRequestHttpCredentials;
+
+    /**
+     * The scheme used for the last request. When a new request is made, this is used to see
+     * whether the {@link #httpClient} credentials need to be changed.
+     */
+    private static String lastRequestScheme = "";
 
     MultipartBody multipartBody;
 
     public OkHttpConnection() {
         if (httpClient == null) {
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-
-            httpClient = builder
-                    .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .writeTimeout(WRITE_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .readTimeout(READ_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .followRedirects(true)
-                    .build();
+            initializeHttpClient();
         }
+    }
+
+    /**
+     * Initializes the {@link #httpClient} field with default settings for timeouts and redirects.
+     */
+    private synchronized void initializeHttpClient() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+
+        httpClient = builder
+                .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                .writeTimeout(WRITE_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                .readTimeout(READ_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                .followRedirects(true)
+                .build();
     }
 
     @NonNull
     @Override
     public HttpGetResult executeGetRequest(@NonNull URI uri, @Nullable String contentType, @Nullable HttpCredentialsInterface credentials) throws Exception {
-        OkHttpClient client = getOkHttpClient(credentials, uri);
+        setOkHttpClientCredentialsIfNeeded(credentials, uri.getScheme());
         Request request = buildGetRequest(uri);
 
-        Response response = client.newCall(request).execute();
+        Response response = httpClient.newCall(request).execute();
         int statusCode = response.code();
 
         if (statusCode != HttpURLConnection.HTTP_OK) {
@@ -142,11 +160,11 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
     @NonNull
     @Override
     public HttpHeadResult executeHeadRequest(@NonNull URI uri, @Nullable HttpCredentialsInterface credentials) throws Exception {
-        OkHttpClient client = getOkHttpClient(credentials, uri);
+        setOkHttpClientCredentialsIfNeeded(credentials, uri.getScheme());
         Request request = buildHeadRequest(uri);
 
         Timber.i("Issuing HEAD request to: %s", uri.toString());
-        Response response = client.newCall(request).execute();
+        Response response = httpClient.newCall(request).execute();
         int statusCode = response.code();
 
         Map<String, String> responseHeaders = new HashMap<>();
@@ -167,10 +185,10 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
     @NonNull
     @Override
     public HttpPostResult executePostRequest(@NonNull URI uri, @Nullable HttpCredentialsInterface credentials) throws Exception {
+        setOkHttpClientCredentialsIfNeeded(credentials, uri.getScheme());
         HttpPostResult postResult;
-        OkHttpClient client = getOkHttpClient(credentials, uri);
         Request request = buildPostRequest(uri, multipartBody);
-        Response response = client.newCall(request).execute();
+        Response response = httpClient.newCall(request).execute();
 
         postResult = new HttpPostResult(
                 response.toString(),
@@ -247,53 +265,23 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
     }
 
     /**
-     * Returns a shared OkHttpClient and sets the {@link #httpClient} and {@link #httpCredentials}
-     * fields.
+     * If the provided credentials are non-null and either the credentials or the scheme doesn't
+     * match the last request's, sets the {@link #httpClient} field to authenticate using the
+     * provided credentials and scheme.
      *
-     * The {@link #httpClient} field is:
-     * - left unchanged if the current request's credentials match the credentials from the last
-     *   request
-     * - changed to reflect new credentials if the current request's credentials are different from
-     *   the last request's
+     * If authentication is needed, always configure digest auth. If the https scheme is used,
+     * also configure basic auth.
      */
-
-    private OkHttpClient getOkHttpClient(@Nullable HttpCredentialsInterface credentials, URI uri) {
-        if (sameCredentials(credentials)) {
-            return httpClient;
-        }
-
-        addCredentials(credentials, uri.getScheme().equalsIgnoreCase("https"));
-        httpCredentials = credentials;
-        return httpClient;
-    }
-
-    private boolean sameCredentials(HttpCredentialsInterface credentials) {
-        if (httpCredentials == null && credentials == null) {
-            return true;
-        } else if (httpCredentials == null || credentials == null) {
-            return false;
-        } else if (httpCredentials.equals(credentials)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * If the provided credentials are non-null, sets the {@link #httpClient} to authenticate using
-     * the provided credentials.
-     *
-     * If authentication is needed, always configure digest auth. If SSL is enabled, also configure
-     * basic auth.
-     */
-    private void addCredentials(@Nullable HttpCredentialsInterface credentials, Boolean sslEnabled) {
-        if (credentials != null) {
+    private void setOkHttpClientCredentialsIfNeeded(@Nullable HttpCredentialsInterface credentials, String scheme) {
+        if (credentials != null
+                && (!credentials.equals(lastRequestHttpCredentials)
+                || !scheme.equalsIgnoreCase(lastRequestScheme))) {
             final Map<String, CachingAuthenticator> authCache = new ConcurrentHashMap<>();
             Credentials cred = new Credentials(credentials.getUsername(), credentials.getPassword());
 
             DispatchingAuthenticator.Builder authenticatorBuilder = new DispatchingAuthenticator.Builder();
 
-            if (sslEnabled) {
+            if (scheme.equalsIgnoreCase("https")) {
                 authenticatorBuilder.with("basic", new BasicAuthenticator(cred));
             }
 
@@ -306,6 +294,9 @@ public class OkHttpConnection implements OpenRosaHttpInterface {
                     .addInterceptor(new AuthenticationCacheInterceptor(authCache))
                     .build();
         }
+
+        lastRequestScheme = scheme;
+        lastRequestHttpCredentials = credentials;
     }
 
     private Request buildGetRequest(@NonNull URI uri) throws MalformedURLException {

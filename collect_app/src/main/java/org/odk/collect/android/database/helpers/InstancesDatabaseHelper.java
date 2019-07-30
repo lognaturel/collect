@@ -46,13 +46,14 @@ import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColum
  * This class helps open, create, and upgrade the database file.
  */
 public class InstancesDatabaseHelper extends SQLiteOpenHelper {
-    private static final String DATABASE_NAME = "instances.db";
+    static final String DATABASE_NAME = "instances.db";
     public static final String INSTANCES_TABLE_NAME = "instances";
 
-    private static final int DATABASE_VERSION = 5;
+    static final int DATABASE_VERSION = 5;
 
-    private final String[] instancesTableColumnsInVersion5 = new String[] {_ID, DISPLAY_NAME, SUBMISSION_URI, CAN_EDIT_WHEN_COMPLETE,
+    private static final String[] COLUMN_NAMES_V5 = new String[] {_ID, DISPLAY_NAME, SUBMISSION_URI, CAN_EDIT_WHEN_COMPLETE,
             INSTANCE_FILE_PATH, JR_FORM_ID, JR_VERSION, STATUS, LAST_STATUS_CHANGE_DATE, DELETED_DATE};
+    public static final String[] CURRENT_VERSION_COLUMN_NAMES = COLUMN_NAMES_V5;
 
     public InstancesDatabaseHelper() {
         super(new DatabaseContext(Collect.METADATA_PATH), DATABASE_NAME, null, DATABASE_VERSION);
@@ -134,7 +135,7 @@ public class InstancesDatabaseHelper extends SQLiteOpenHelper {
      * removing a column. See https://sqlite.org/lang_altertable.html
      */
     private void moveInstancesTableToVersion5(SQLiteDatabase db) {
-        List<String> columnNamesPrev = getColumnNames(db);
+        List<String> columnNamesPrev = getInstancesColumnNames(db);
 
         String temporaryTableName = INSTANCES_TABLE_NAME + "_tmp";
 
@@ -149,7 +150,7 @@ public class InstancesDatabaseHelper extends SQLiteOpenHelper {
         createInstancesTableV5(db, temporaryTableName);
 
         // Only select columns from the existing table that are also relevant to v5
-        columnNamesPrev.retainAll(new ArrayList<>(Arrays.asList(instancesTableColumnsInVersion5)));
+        columnNamesPrev.retainAll(new ArrayList<>(Arrays.asList(COLUMN_NAMES_V5)));
 
         CustomSQLiteQueryBuilder
                 .begin(db)
@@ -160,16 +161,16 @@ public class InstancesDatabaseHelper extends SQLiteOpenHelper {
                 .from(INSTANCES_TABLE_NAME)
                 .end();
 
-        CustomSQLiteQueryBuilder
-                .begin(db)
-                .dropIfExists(INSTANCES_TABLE_NAME)
-                .end();
-
-        CustomSQLiteQueryBuilder
-                .begin(db)
-                .renameTable(temporaryTableName)
-                .to(INSTANCES_TABLE_NAME)
-                .end();
+//        CustomSQLiteQueryBuilder
+//                .begin(db)
+//                .dropIfExists(INSTANCES_TABLE_NAME)
+//                .end();
+//
+//        CustomSQLiteQueryBuilder
+//                .begin(db)
+//                .renameTable(temporaryTableName)
+//                .to(INSTANCES_TABLE_NAME)
+//                .end();
     }
 
     private void createInstancesTableV5(SQLiteDatabase db, String name) {
@@ -186,7 +187,7 @@ public class InstancesDatabaseHelper extends SQLiteOpenHelper {
                 + DELETED_DATE + " date );");
     }
 
-    private List<String> getColumnNames(SQLiteDatabase db) {
+    static List<String> getInstancesColumnNames(SQLiteDatabase db) {
         String[] columnNames;
         try (Cursor c = db.query(INSTANCES_TABLE_NAME, null, null, null, null, null, null)) {
             columnNames = c.getColumnNames();

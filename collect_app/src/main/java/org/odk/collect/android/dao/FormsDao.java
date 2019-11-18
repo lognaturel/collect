@@ -218,6 +218,11 @@ public class FormsDao {
         return Collect.getInstance().getContentResolver().insert(FormsProviderAPI.FormsColumns.CONTENT_URI, values);
     }
 
+    public Uri saveForm(Form form) {
+        return Collect.getInstance().getContentResolver().insert(FormsProviderAPI.FormsColumns.CONTENT_URI,
+                getValuesFromFormObject(form));
+    }
+
     public int updateForm(ContentValues values) {
         return updateForm(values, null, null);
     }

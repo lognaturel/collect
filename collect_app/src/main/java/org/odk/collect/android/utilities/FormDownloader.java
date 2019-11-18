@@ -25,6 +25,7 @@ import org.kxml2.kdom.Element;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.FormsDao;
+import org.odk.collect.android.dto.Form;
 import org.odk.collect.android.http.CollectServerClient;
 import org.odk.collect.android.listeners.FormDownloaderListener;
 import org.odk.collect.android.logic.FormDetails;
@@ -163,12 +164,12 @@ public class FormDownloader {
             fileResult = null;
         }
 
-        Map<String, String> parsedFields = null;
+        Form parsedForm = null;
         if (fileResult != null) {
             try {
                 final long start = System.currentTimeMillis();
                 Timber.w("Parsing document %s", fileResult.file.getAbsolutePath());
-                parsedFields = FileUtils.getMetadataFromFormDefinition(fileResult.file);
+                parsedForm =  Form.fromFormDefinitionFile(fileResult.file);
                 Timber.i("Parse finished in %.3f seconds.",
                         (System.currentTimeMillis() - start) / 1000F);
             } catch (RuntimeException e) {
@@ -178,9 +179,9 @@ public class FormDownloader {
 
         boolean installed = false;
 
-        if ((stateListener == null || !stateListener.isTaskCanceled()) && message.isEmpty() && parsedFields != null) {
-            if (isSubmissionOk(parsedFields)) {
-                installed = installEverything(tempMediaPath, fileResult, parsedFields);
+        if ((stateListener == null || !stateListener.isTaskCanceled()) && message.isEmpty() && parsedForm != null) {
+            if (parsedForm.getSubmissionUri() == null || Validator.isUrlValid(parsedForm.getSubmissionUri())) {
+                installed = installEverything(tempMediaPath, fileResult, parsedForm);
             } else {
                 message += Collect.getInstance().getString(R.string.xform_parse_error,
                         fileResult.file.getName(), "submission url");
@@ -193,15 +194,10 @@ public class FormDownloader {
         return message;
     }
 
-    private boolean isSubmissionOk(Map<String, String> parsedFields) {
-        String submission = parsedFields.get(FileUtils.SUBMISSIONURI);
-        return submission == null || Validator.isUrlValid(submission);
-    }
-
-    private boolean installEverything(String tempMediaPath, FileResult fileResult, Map<String, String> parsedFields) {
+    private boolean installEverything(String tempMediaPath, FileResult fileResult, Form parsedForm) {
         UriResult uriResult = null;
         try {
-            uriResult = findExistingOrCreateNewUri(fileResult.file, parsedFields);
+            uriResult = findExistingOrCreateNewUri(parsedForm);
             if (uriResult != null) {
                 Timber.w("Form uri = %s, isNew = %b", uriResult.getUri().toString(), uriResult.isNew());
 
@@ -268,19 +264,17 @@ public class FormDownloader {
      * Creates a new form in the database, if none exists with the same absolute path. Returns
      * information with the URI, media path, and whether the form is new.
      *
-     * @param formFile the form definition file
-     * @param formInfo certain fields extracted from the parsed XML form, such as title and form ID
      * @return a {@link UriResult} object
      */
-    private UriResult findExistingOrCreateNewUri(File formFile, Map<String, String> formInfo) {
+    private UriResult findExistingOrCreateNewUri(Form parsedForm) {
         final Uri uri;
-        final String formFilePath = formFile.getAbsolutePath();
+        final String formFilePath = parsedForm.getFormFilePath();
         String mediaPath = FileUtils.constructMediaPath(formFilePath);
         final boolean isNew;
 
-        FileUtils.checkMediaPath(new File(mediaPath));
+        FileUtils.removeFileAtMediaDirPath(new File(mediaPath));
 
-        try (Cursor cursor = formsDao.getFormsCursorForFormFilePath(formFile.getAbsolutePath())) {
+        try (Cursor cursor = formsDao.getFormsCursorForFormFilePath(parsedForm.getFormFilePath())) {
             if (cursor == null) {
                 return null;
             }
@@ -288,7 +282,8 @@ public class FormDownloader {
             isNew = cursor.getCount() <= 0;
 
             if (isNew) {
-                uri = saveNewForm(formInfo, formFile, mediaPath);
+                // TODO: media path needs to be included, I think
+                uri = new FormsDao().saveForm(parsedForm);
             } else {
                 cursor.moveToFirst();
                 uri = Uri.withAppendedPath(FormsProviderAPI.FormsColumns.CONTENT_URI,
@@ -627,8 +622,8 @@ public class FormDownloader {
             File tempMediaDir = new File(tempMediaPath);
             File finalMediaDir = new File(finalMediaPath);
 
-            FileUtils.checkMediaPath(tempMediaDir);
-            FileUtils.checkMediaPath(finalMediaDir);
+            FileUtils.removeFileAtMediaDirPath(tempMediaDir);
+            FileUtils.removeFileAtMediaDirPath(finalMediaDir);
 
             for (MediaFile toDownload : files) {
                 ++mediaCount;

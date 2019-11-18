@@ -16,11 +16,17 @@
 
 package org.odk.collect.android.dto;
 
+import org.javarosa.core.model.FormDef;
+import org.javarosa.xform.util.XFormUtils;
+import org.odk.collect.android.utilities.FileUtils;
+
+import java.io.File;
+
 /**
- * This class represents a single row from the forms table which is located in
- * {@link org.odk.collect.android.database.helpers.FormsDatabaseHelper#DATABASE_NAME}
- * For more information about this pattern go to https://en.wikipedia.org/wiki/Data_transfer_object
- * Objects of this class are created using builder pattern: https://en.wikipedia.org/wiki/Builder_pattern
+ * A form definition. Maps to a single row from the forms table described by
+ * {@link org.odk.collect.android.database.helpers.FormsDatabaseHelper}.
+ *
+ * Instances may be created using the builder pattern: https://en.wikipedia.org/wiki/Builder_pattern
  */
 public final class Form {
     private final int id;
@@ -234,5 +240,27 @@ public final class Form {
     @Override
     public int hashCode() {
         return md5Hash.hashCode();
+    }
+
+    public static Form fromFormDefinitionFile(File formDefinitionXml) {
+        String lastSavedSrc = FileUtils.getOrCreateLastSavedSrc(formDefinitionXml);
+        FormDef formDef = XFormUtils.getFormFromFormXml(formDefinitionXml.getAbsolutePath(), lastSavedSrc);
+
+        String key = formDef.getSubmissionProfile().getAttribute("base64RsaPublicKey");
+        if (key != null && key.trim().length() > 0) {
+            key = key.trim();
+        } else {
+            key = null;
+        }
+
+        return new Builder()
+                .displayName(formDef.getTitle())
+                .jrFormId(formDef.getMainInstance().getRoot().getAttributeValue(null, "id"))
+                .jrVersion(formDef.getMainInstance().getRoot().getAttributeValue(null, "version"))
+                .submissionUri(formDef.getSubmissionProfile().getAction())
+                .base64RSAPublicKey(key)
+                .autoDelete(formDef.getSubmissionProfile().getAttribute("auto-delete"))
+                .autoSend(formDef.getSubmissionProfile().getAttribute("auto-send"))
+                .build();
     }
 }

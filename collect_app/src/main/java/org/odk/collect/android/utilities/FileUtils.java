@@ -25,8 +25,6 @@ import android.os.Build;
 import android.os.Environment;
 
 import org.apache.commons.io.IOUtils;
-import org.javarosa.core.model.FormDef;
-import org.javarosa.xform.util.XFormUtils;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 
@@ -45,7 +43,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -257,37 +254,6 @@ public class FileUtils {
         }
     }
 
-    /**
-     * Given a form definition file, return a map containing form metadata. The form ID is required
-     * by the specification and will always be included. Title and version are optionally included.
-     * If the form definition contains a submission block, any or all of submission URI, base 64 RSA
-     * public key, auto-delete and auto-send may be included.
-     */
-    public static HashMap<String, String> getMetadataFromFormDefinition(File formDefinitionXml) {
-        String lastSavedSrc = FileUtils.getOrCreateLastSavedSrc(formDefinitionXml);
-        FormDef formDef = XFormUtils.getFormFromFormXml(formDefinitionXml.getAbsolutePath(), lastSavedSrc);
-
-        final HashMap<String, String> fields = new HashMap<>();
-
-        fields.put(TITLE, formDef.getTitle());
-        fields.put(FORMID, formDef.getMainInstance().getRoot().getAttributeValue(null, "id"));
-        fields.put(VERSION, formDef.getMainInstance().getRoot().getAttributeValue(null, "version"));
-
-        if (formDef.getSubmissionProfile() != null) {
-            fields.put(SUBMISSIONURI, formDef.getSubmissionProfile().getAction());
-
-            final String key = formDef.getSubmissionProfile().getAttribute("base64RsaPublicKey");
-            if (key != null && key.trim().length() > 0) {
-                fields.put(BASE64_RSA_PUBLIC_KEY, key.trim());
-            }
-
-            fields.put(AUTO_DELETE, formDef.getSubmissionProfile().getAttribute("auto-delete"));
-            fields.put(AUTO_SEND, formDef.getSubmissionProfile().getAttribute("auto-send"));
-        }
-
-        return fields;
-    }
-
     public static void deleteAndReport(File file) {
         if (file != null && file.exists()) {
             // remove garbage
@@ -353,7 +319,7 @@ public class FileUtils {
     /**
      * @param mediaDir the media folder
      */
-    public static void checkMediaPath(File mediaDir) {
+    public static void removeFileAtMediaDirPath(File mediaDir) {
         if (mediaDir.exists() && mediaDir.isFile()) {
             Timber.e("The media folder is already there and it is a FILE!! We will need to delete "
                     + "it and create a folder instead");

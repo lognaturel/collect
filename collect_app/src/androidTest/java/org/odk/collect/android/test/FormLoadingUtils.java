@@ -90,7 +90,7 @@ public class FormLoadingUtils {
 
     private static void copyFormMediaFiles(String formFilename, List<String> mediaFilenames) throws IOException {
         String mediaPathName = Collect.FORMS_PATH + "/" + formFilename.replace(".xml", "") + FileUtils.MEDIA_SUFFIX + "/";
-        FileUtils.checkMediaPath(new File(mediaPathName));
+        FileUtils.removeFileAtMediaDirPath(new File(mediaPathName));
 
         for (String mediaFilename : mediaFilenames) {
             copyFileFromAssets("media/" + mediaFilename, mediaPathName + mediaFilename);

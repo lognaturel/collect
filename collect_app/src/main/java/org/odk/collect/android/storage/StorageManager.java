@@ -54,8 +54,26 @@ public class StorageManager {
             };
     }
 
+    private static String getStoragePath() {
+        return isScopedStorageUsed()
+                ? getPrimaryExternalStorageFilePath()
+                : getSecondaryExternalStorageFilePath();
+    }
+
+    private static String getPrimaryExternalStorageFilePath() {
+        File primaryStorageFile = Collect.getInstance().getExternalFilesDir(null);
+        if (primaryStorageFile != null) {
+            return primaryStorageFile.getAbsolutePath();
+        }
+        return "";
+    }
+
+    private static String getSecondaryExternalStorageFilePath() {
+        return Environment.getExternalStorageDirectory().getAbsolutePath();
+    }
+
     public static String getMainODKDirPath() {
-        return Environment.getExternalStorageDirectory() + File.separator + "odk";
+        return getStoragePath() + File.separator + "odk";
     }
 
     public static String getFormsDirPath() {

@@ -122,4 +122,20 @@ public class StorageManager {
     public static void recordMigrationToScopedStorage() {
         GeneralSharedPreferences.getInstance().save(KEY_SCOPED_STORAGE_USED, true);
     }
+
+    // TODO the method should be removed once using Scoped storage became required
+    public static String getCacheFilePath(String relativePath) {
+        return isScopedStorageUsed()
+                ? relativePath
+                : getCacheDirPath() + File.separator + relativePath;
+    }
+
+    public static String getAbsoluteCacheFilePath(String filePath) {
+        if (filePath == null) {
+            return null;
+        }
+        return filePath.startsWith(getCacheDirPath())
+                ? filePath
+                : getCacheDirPath() + File.separator + filePath;
+    }
 }

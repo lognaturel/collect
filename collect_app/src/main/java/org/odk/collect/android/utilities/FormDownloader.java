@@ -298,12 +298,12 @@ public class FormDownloader {
             isNew = cursor.getCount() <= 0;
 
             if (isNew) {
-                uri = saveNewForm(formInfo, formFile, mediaPath);
+                uri = saveNewForm(formInfo, formFile, StorageManager.getFormFilePath(FileUtils.constructMediaPath(formFile.getName())));
             } else {
                 cursor.moveToFirst();
                 uri = Uri.withAppendedPath(FormsColumns.CONTENT_URI,
                         cursor.getString(cursor.getColumnIndex(FormsColumns._ID)));
-                mediaPath = cursor.getString(cursor.getColumnIndex(FormsColumns.FORM_MEDIA_PATH));
+                mediaPath = StorageManager.getAbsoluteFormFilePath(cursor.getString(cursor.getColumnIndex(FormsColumns.FORM_MEDIA_PATH)));
             }
         }
 

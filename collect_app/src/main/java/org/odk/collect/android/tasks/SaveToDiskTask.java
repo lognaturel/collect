@@ -49,6 +49,7 @@ import org.odk.collect.android.logic.FormController;
 import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
 import org.odk.collect.android.provider.InstanceProviderAPI;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
+import org.odk.collect.android.storage.StorageManager;
 import org.odk.collect.android.utilities.EncryptionUtils;
 import org.odk.collect.android.utilities.EncryptionUtils.EncryptedFormInformation;
 import org.odk.collect.android.utilities.FileUtils;
@@ -346,7 +347,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
      * Return the savepoint file for a given instance.
      */
     static File getSavepointFile(String instanceName) {
-        File tempDir = new File(Collect.CACHE_PATH);
+        File tempDir = new File(StorageManager.CACHE_PATH);
         return new File(tempDir, instanceName + ".save");
     }
 
@@ -354,7 +355,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
      * Return the formIndex file for a given instance.
      */
     public static File getFormIndexFile(String instanceName) {
-        File tempDir = new File(Collect.CACHE_PATH);
+        File tempDir = new File(StorageManager.CACHE_PATH);
         return new File(tempDir, instanceName + ".index");
     }
 

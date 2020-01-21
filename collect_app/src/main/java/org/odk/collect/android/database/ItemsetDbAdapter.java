@@ -87,7 +87,7 @@ public class ItemsetDbAdapter {
         dbHelper.close();
     }
 
-    public boolean createTable(String formHash, String pathHash, String[] columns, String path) {
+    public boolean createTable(String formHash, String pathHash, String[] columns, String relativeCsvFilePath) {
         StringBuilder sb = new StringBuilder();
 
         // get md5 of the path to itemset.csv, which is unique per form
@@ -116,7 +116,7 @@ public class ItemsetDbAdapter {
 
         ContentValues cv = new ContentValues();
         cv.put(KEY_ITEMSET_HASH, formHash);
-        cv.put(KEY_PATH, path);
+        cv.put(KEY_PATH, StorageManager.getFormFilePath(relativeCsvFilePath));
         db.insert(ITEMSET_TABLE, null, cv);
 
         return true;
@@ -166,32 +166,32 @@ public class ItemsetDbAdapter {
                 null, null, null, null);
     }
 
-    public void dropTable(String pathHash, String path) {
+    public void dropTable(String pathHash, String relativeCsvFilePath) {
         // drop the table
         db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE + pathHash);
 
         // and remove the entry from the itemsets table
         String where = KEY_PATH + "=?";
         String[] whereArgs = {
-                path
+                StorageManager.getFormFilePath(relativeCsvFilePath)
         };
         db.delete(ITEMSET_TABLE, where, whereArgs);
     }
 
-    public Cursor getItemsets(String path) {
+    public Cursor getItemsets(String relativeCsvFilePath) {
         String selection = KEY_PATH + "=?";
         String[] selectionArgs = {
-                path
+                StorageManager.getFormFilePath(relativeCsvFilePath)
         };
         return db.query(ITEMSET_TABLE, null, selection, selectionArgs, null, null, null);
     }
 
-    public void delete(String path) {
-        Cursor c = getItemsets(path);
+    public void delete(String relativeCsvFilePath) {
+        Cursor c = getItemsets(relativeCsvFilePath);
         if (c != null) {
             if (c.getCount() == 1) {
                 c.moveToFirst();
-                String table = getMd5FromString(c.getString(c.getColumnIndex(KEY_PATH)));
+                String table = getMd5FromString(StorageManager.getAbsoluteFormFilePath(c.getString(c.getColumnIndex(KEY_PATH))));
                 db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE + table);
             }
             c.close();
@@ -199,7 +199,7 @@ public class ItemsetDbAdapter {
 
         String where = KEY_PATH + "=?";
         String[] whereArgs = {
-                path
+                StorageManager.getFormFilePath(relativeCsvFilePath)
         };
         db.delete(ITEMSET_TABLE, where, whereArgs);
     }

@@ -249,6 +249,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
     private void processItemSets(File formMediaDir) {
         // for itemsets.csv, we only check to see if the itemset file has been
         // updated
+        String relativeCsvFilePath = formMediaDir.getName() + File.separator + ITEMSETS_CSV;
         final File csv = new File(formMediaDir.getAbsolutePath() + "/" + ITEMSETS_CSV);
         String csvmd5 = null;
         if (csv.exists()) {
@@ -258,7 +259,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
             ida.open();
             // get the database entry (if exists) for this itemsets.csv, based
             // on the path
-            final Cursor c = ida.getItemsets(csv.getAbsolutePath());
+            final Cursor c = ida.getItemsets(relativeCsvFilePath);
             if (c != null) {
                 if (c.getCount() == 1) {
                     c.moveToFirst(); // should be only one, ever, if any
@@ -267,8 +268,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
                         // they're equal, do nothing
                     } else {
                         // the csv has been updated, delete the old entries
-                        ida.dropTable(ItemsetDbAdapter.getMd5FromString(csv.getAbsolutePath()),
-                                csv.getAbsolutePath());
+                        ida.dropTable(ItemsetDbAdapter.getMd5FromString(csv.getAbsolutePath()), relativeCsvFilePath);
                         // and read the new
                         readFile = true;
                     }
@@ -280,7 +280,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
             }
             ida.close();
             if (readFile) {
-                readCSV(csv, csvmd5, ItemsetDbAdapter.getMd5FromString(csv.getAbsolutePath()));
+                readCSV(csv, csvmd5, ItemsetDbAdapter.getMd5FromString(csv.getAbsolutePath()), relativeCsvFilePath);
             }
         }
     }
@@ -508,7 +508,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
         this.intent = intent;
     }
 
-    private void readCSV(File csv, String formHash, String pathHash) {
+    private void readCSV(File csv, String formHash, String pathHash, String relativeCsvFilePath) {
 
         CSVReader reader;
         ItemsetDbAdapter ida = new ItemsetDbAdapter();
@@ -526,8 +526,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
                 if (lineNumber == 1) {
                     // first line of csv is column headers
                     columnHeaders = nextLine;
-                    ida.createTable(formHash, pathHash, columnHeaders,
-                            csv.getAbsolutePath());
+                    ida.createTable(formHash, pathHash, columnHeaders, relativeCsvFilePath);
                     continue;
                 }
                 // add the rest of the lines to the specified database

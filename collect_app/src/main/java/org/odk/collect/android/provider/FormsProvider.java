@@ -336,7 +336,7 @@ public class FormsProvider extends ContentProvider {
                                     // get rid of the old tables
                                     ItemsetDbAdapter ida = new ItemsetDbAdapter();
                                     ida.open();
-                                    ida.delete(StorageManager.getAbsoluteFormFilePath(c.getString(c
+                                    ida.delete(StorageManager.getRelativeFormFilePath(c.getString(c
                                             .getColumnIndex(FormsColumns.FORM_MEDIA_PATH))
                                             + "/itemsets.csv"));
                                     ida.close();

@@ -146,6 +146,13 @@ public class StorageManager {
                 : getFormsDirPath() + File.separator + relativePath;
     }
 
+    // TODO the method should be removed once using Scoped storage became required
+    public static String getRelativeFormFilePath(String filePath) {
+        return filePath.startsWith(getFormsDirPath())
+                ? filePath.substring(getFormsDirPath().length() + 1)
+                : filePath;
+    }
+
     public static String getAbsoluteFormFilePath(String filePath) {
         if (filePath == null) {
             return null;

@@ -110,7 +110,7 @@ public class SmsService {
             if (results.getCount() > 0) {
                 results.moveToPosition(-1);
                 while (results.moveToNext()) {
-                    String filePath = StorageManager.getAbsoluteInstanceFilePath(results.getString(results
+                    String filePath = new StorageManager().getAbsoluteInstanceFilePath(results.getString(results
                             .getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH)));
                     String instanceId = results.getString(results.getColumnIndex(InstanceColumns._ID));
                     String displayName = results.getString(results.getColumnIndex(InstanceColumns.DISPLAY_NAME));

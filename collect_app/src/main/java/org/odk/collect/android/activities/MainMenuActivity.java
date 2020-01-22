@@ -219,7 +219,7 @@ public class MainMenuActivity extends CollectAbstractActivity {
         // external intent
         Timber.i("Starting up, creating directories");
         try {
-            StorageManager.createODKDirs();
+            new StorageManager().createODKDirs();
         } catch (RuntimeException e) {
             createErrorDialog(e.getMessage(), EXIT);
             return;
@@ -232,8 +232,8 @@ public class MainMenuActivity extends CollectAbstractActivity {
                     .getVersionedAppName());
         }
 
-        File f = new File(StorageManager.getMainODKDirPath() + "/collect.settings");
-        File j = new File(StorageManager.getMainODKDirPath() + "/collect.settings.json");
+        File f = new File(new StorageManager().getMainODKDirPath() + "/collect.settings");
+        File j = new File(new StorageManager().getMainODKDirPath() + "/collect.settings.json");
         // Give JSON file preference
         if (j.exists()) {
             boolean success = SharedPreferencesUtils.loadSharedPreferencesFromJSONFile(j);

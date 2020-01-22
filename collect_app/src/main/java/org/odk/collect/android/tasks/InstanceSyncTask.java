@@ -77,7 +77,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
 
         try {
             List<String> candidateInstances = new LinkedList<>();
-            File instancesPath = new File(StorageManager.getInstancesDirPath());
+            File instancesPath = new File(new StorageManager().getInstancesDirPath());
             if (instancesPath.exists() && instancesPath.isDirectory()) {
                 File[] instanceFolders = instancesPath.listFiles();
                 if (instanceFolders == null || instanceFolders.length == 0) {
@@ -120,7 +120,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
                     instanceCursor.moveToPosition(-1);
 
                     while (instanceCursor.moveToNext()) {
-                        String instanceFilename = StorageManager.getAbsoluteInstanceFilePath(instanceCursor.getString(
+                        String instanceFilename = new StorageManager().getAbsoluteInstanceFilePath(instanceCursor.getString(
                                 instanceCursor.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH)));
                         String instanceStatus = instanceCursor.getString(
                                 instanceCursor.getColumnIndex(InstanceColumns.STATUS));
@@ -168,7 +168,8 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
 
                                 // add missing fields into content values
                                 ContentValues values = new ContentValues();
-                                values.put(InstanceColumns.INSTANCE_FILE_PATH, StorageManager.getInstanceFilePath(StorageManager.getRelativeInstanceFilePath(candidateInstance)));
+                                StorageManager storageManager = new StorageManager();
+                                values.put(InstanceColumns.INSTANCE_FILE_PATH, storageManager.getInstanceFilePath(storageManager.getRelativeInstanceFilePath(candidateInstance)));
                                 values.put(InstanceColumns.SUBMISSION_URI, submissionUri);
                                 values.put(InstanceColumns.DISPLAY_NAME, formName);
                                 values.put(InstanceColumns.JR_FORM_ID, jrFormId);
@@ -263,7 +264,8 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
                 values.put(InstanceColumns.CAN_EDIT_WHEN_COMPLETE, Boolean.toString(false));
                 values.put(InstanceColumns.GEOMETRY_TYPE, (String) null);
                 values.put(InstanceColumns.GEOMETRY, (String) null);
-                instancesDao.updateInstance(values, InstanceColumns.INSTANCE_FILE_PATH + "=?", new String[]{StorageManager.getInstanceFilePath(StorageManager.getRelativeInstanceFilePath(candidateInstance))});
+                StorageManager storageManager = new StorageManager();
+                instancesDao.updateInstance(values, InstanceColumns.INSTANCE_FILE_PATH + "=?", new String[]{storageManager.getInstanceFilePath(storageManager.getRelativeInstanceFilePath(candidateInstance))});
 
                 SaveToDiskTask.manageFilesAfterSavingEncryptedForm(instanceXml, submissionXml);
                 if (!EncryptionUtils.deletePlaintextFiles(instanceXml, null)) {

@@ -67,7 +67,7 @@ public class StorageManager {
                 : getSecondaryExternalStorageFilePath();
     }
 
-    private String getPrimaryExternalStorageFilePath() {
+    String getPrimaryExternalStorageFilePath() {
         File primaryStorageFile = Collect.getInstance().getExternalFilesDir(null);
         if (primaryStorageFile != null) {
             return primaryStorageFile.getAbsolutePath();
@@ -75,7 +75,7 @@ public class StorageManager {
         return "";
     }
 
-    private String getSecondaryExternalStorageFilePath() {
+    String getSecondaryExternalStorageFilePath() {
         return Environment.getExternalStorageDirectory().getAbsolutePath();
     }
 
@@ -115,7 +115,7 @@ public class StorageManager {
         return getCacheDirPath() + File.separator + "tmpDraw.jpg";
     }
 
-    private boolean isScopedStorageUsed() {
+    boolean isScopedStorageUsed() {
         return GeneralSharedPreferences.getInstance().getBoolean(KEY_SCOPED_STORAGE_USED, false);
     }
 

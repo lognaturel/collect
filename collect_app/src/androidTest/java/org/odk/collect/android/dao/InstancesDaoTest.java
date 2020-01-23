@@ -177,7 +177,7 @@ public class InstancesDaoTest {
         Instance formWithGeopointInstance = new Instance.Builder()
                 .jrFormId("fake")
                 .displayName("Form with geopoint")
-                .instanceFilePath("/my/fake/path")
+                .instanceFilePath(storageManager.getInstancesDirPath() + "/my/fake/path")
                 .status(InstanceProviderAPI.STATUS_SUBMITTED)
                 .lastStatusChangeDate(1487595836793L)
                 .geometryType("Point")
@@ -187,7 +187,7 @@ public class InstancesDaoTest {
 
         Collect.getInstance().getContentResolver().delete(result, null, null);
 
-        Cursor cursor = instancesDao.getInstancesCursorForFilePath("/my/fake/path");
+        Cursor cursor = instancesDao.getInstancesCursorForFilePath(storageManager.getInstancesDirPath() + "/my/fake/path");
         formWithGeopointInstance = instancesDao.getInstancesFromCursor(cursor).get(0);
 
         assertThat(formWithGeopointInstance.getGeometryType(), is(nullValue()));

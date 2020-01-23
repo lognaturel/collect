@@ -124,7 +124,7 @@ public class StorageManager {
     }
 
     // TODO the method should be removed once using Scoped storage became required
-    public String getCacheFilePath(String relativePath) {
+    public String getCacheFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
         return isScopedStorageUsed()
                 ? relativePath
                 : getCacheDirPath() + File.separator + relativePath;
@@ -140,7 +140,7 @@ public class StorageManager {
     }
 
     // TODO the method should be removed once using Scoped storage became required
-    public String getFormFilePath(String relativePath) {
+    public String getFormFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
         return isScopedStorageUsed()
                 ? relativePath
                 : getFormsDirPath() + File.separator + relativePath;
@@ -163,7 +163,7 @@ public class StorageManager {
     }
 
     // TODO the method should be removed once using Scoped storage became required
-    public String getInstanceFilePath(String relativePath) {
+    public String getInstanceFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
         return isScopedStorageUsed()
                 ? relativePath
                 : getInstancesDirPath() + File.separator + relativePath;

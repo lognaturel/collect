@@ -161,7 +161,7 @@ public class InstancesDaoTest {
                 .build();
 
         String where = InstanceColumns.INSTANCE_FILE_PATH + "=?";
-        String[] whereArgs = {storageManager.getInstanceFilePath( "Biggest N of Set_2017-02-20_14-24-46/Biggest N of Set_2017-02-20_14-24-46.xml")};
+        String[] whereArgs = {storageManager.getInstanceFilePathToStoreInDatabaseBasingOnRelativePath( "Biggest N of Set_2017-02-20_14-24-46/Biggest N of Set_2017-02-20_14-24-46.xml")};
 
         assertEquals(instancesDao.updateInstance(instancesDao.getValuesFromInstanceObject(biggestNOfSet2Instance), where, whereArgs), 1);
 

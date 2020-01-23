@@ -9,7 +9,7 @@ import static org.mockito.Mockito.spy;
 
 public class StorageManagerTest {
 
-    private StorageManager storageManager = spy(StorageManager.class);
+    private final StorageManager storageManager = spy(StorageManager.class);
 
     @Before
     public void setup() {

@@ -33,7 +33,7 @@ import java.util.List;
 
 public class ResetUtility {
 
-    private StorageManager storageManager = new StorageManager();
+    private final StorageManager storageManager = new StorageManager();
 
     private List<Integer> failedResetActions;
 

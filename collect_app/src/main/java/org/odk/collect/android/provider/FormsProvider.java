@@ -55,7 +55,7 @@ public class FormsProvider extends ContentProvider {
 
     private static FormsDatabaseHelper dbHelper;
 
-    private StorageManager storageManager = new StorageManager();
+    private final StorageManager storageManager = new StorageManager();
 
     private synchronized FormsDatabaseHelper getDbHelper() {
         // wrapper to test and reset/set the dbHelper based upon the attachment state of the device.

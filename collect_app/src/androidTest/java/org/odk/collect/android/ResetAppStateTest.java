@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(AndroidJUnit4.class)
 public class ResetAppStateTest {
 
-    private StorageManager storageManager = new StorageManager();
+    private final StorageManager storageManager = new StorageManager();
 
     @Rule
     public GrantPermissionRule permissionRule = GrantPermissionRule.grant(
@@ -185,7 +185,7 @@ public class ResetAppStateTest {
 
     private void setupTestInstancesDatabase() {
         ContentValues values = new ContentValues();
-        values.put(InstanceColumns.INSTANCE_FILE_PATH, storageManager.getInstanceFilePathToStoreInDatabaseBasingOnRelativePath( "testDir1/testFile1"));
+        values.put(InstanceColumns.INSTANCE_FILE_PATH, storageManager.getInstanceFilePathToStoreInDatabaseBasingOnRelativePath("testDir1/testFile1"));
         values.put(InstanceColumns.SUBMISSION_URI, "submissionUri");
         values.put(InstanceColumns.DISPLAY_NAME, "displayName");
         values.put(InstanceColumns.DISPLAY_NAME, "formName");

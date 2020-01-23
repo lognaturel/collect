@@ -54,7 +54,7 @@ public class FormsDaoTest {
     private Form widgetsForm;
     private Form sampleForm;
     private Form birds2Form;
-    private StorageManager storageManager = new StorageManager();
+    private final StorageManager storageManager = new StorageManager();
 
     @Before
     public void setUp() throws IOException {

@@ -13,25 +13,6 @@ import timber.log.Timber;
 import static org.odk.collect.android.preferences.GeneralKeys.KEY_SCOPED_STORAGE_USED;
 
 public class StorageManager {
-    public enum Subdirectory {
-        FORMS("forms"),
-        INSTANCES("instances"),
-        CACHE(".cache"),
-        METADATA("metadata"),
-        LAYERS("layers"),
-        SETTINGS("settings");
-
-        private String directoryName;
-
-        Subdirectory(String directoryName) {
-            this.directoryName = directoryName;
-        }
-
-        public String getDirectoryName() {
-            return directoryName;
-        }
-    }
-
     public String[] getODKDirPaths() {
         return new String[]{
                 getMainODKDirPath(),
@@ -181,5 +162,24 @@ public class StorageManager {
 
     private String getStorageState() {
         return Environment.getExternalStorageState();
+    }
+
+    public enum Subdirectory {
+        FORMS("forms"),
+        INSTANCES("instances"),
+        CACHE(".cache"),
+        METADATA("metadata"),
+        LAYERS("layers"),
+        SETTINGS("settings");
+
+        private String directoryName;
+
+        Subdirectory(String directoryName) {
+            this.directoryName = directoryName;
+        }
+
+        public String getDirectoryName() {
+            return directoryName;
+        }
     }
 }

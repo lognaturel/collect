@@ -230,7 +230,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
 
             String where = InstanceColumns.INSTANCE_FILE_PATH + "=?";
             StorageManager storageManager = new StorageManager();
-            int updated = new InstancesDao().updateInstance(values, where, new String[] {storageManager.getInstanceFilePathToStoreInDatabaseBasingOnRelativePath(storageManager.getRelativeInstanceFilePath(instancePath))});
+            int updated = new InstancesDao().updateInstance(values, where, new String[] {storageManager.getDbPathFromRelativePath(storageManager.getRelativeInstanceFilePath(instancePath), StorageManager.Subdirectory.INSTANCES)});
             if (updated > 1) {
                 Timber.w("Updated more than one entry, that's not good: %s", instancePath);
             } else if (updated == 1) {
@@ -248,7 +248,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
                     }
 
                     // add missing fields into values
-                    values.put(InstanceColumns.INSTANCE_FILE_PATH, storageManager.getInstanceFilePathToStoreInDatabaseBasingOnRelativePath(storageManager.getRelativeInstanceFilePath(instancePath)));
+                    values.put(InstanceColumns.INSTANCE_FILE_PATH, storageManager.getDbPathFromRelativePath(storageManager.getRelativeInstanceFilePath(instancePath), StorageManager.Subdirectory.INSTANCES));
                     values.put(InstanceColumns.SUBMISSION_URI, submissionUri);
                     if (instanceName != null) {
                         values.put(InstanceColumns.DISPLAY_NAME, instanceName);

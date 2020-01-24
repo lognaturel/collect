@@ -59,10 +59,10 @@ public class StorageManager {
     }
 
     // TODO the method should be removed once using Scoped storage became required
-    public String getCacheFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
+    public String getDbPathFromRelativePath(String relativePath, Subdirectory subdirectory) {
         return isScopedStorageUsed()
                 ? relativePath
-                : getDirPath(Subdirectory.CACHE) + File.separator + relativePath;
+                : getDirPath(subdirectory) + File.separator + relativePath;
     }
 
     public String getAbsoluteCacheFilePath(String filePath) {
@@ -72,13 +72,6 @@ public class StorageManager {
         return filePath.startsWith(getDirPath(Subdirectory.CACHE))
                 ? filePath
                 : getDirPath(Subdirectory.CACHE) + File.separator + filePath;
-    }
-
-    // TODO the method should be removed once using Scoped storage became required
-    public String getFormFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
-        return isScopedStorageUsed()
-                ? relativePath
-                : getDirPath(Subdirectory.FORMS) + File.separator + relativePath;
     }
 
     // TODO the method should be removed once using Scoped storage became required
@@ -95,13 +88,6 @@ public class StorageManager {
         return filePath.startsWith(getDirPath(Subdirectory.FORMS))
                 ? filePath
                 : getDirPath(Subdirectory.FORMS) + File.separator + filePath;
-    }
-
-    // TODO the method should be removed once using Scoped storage became required
-    public String getInstanceFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
-        return isScopedStorageUsed()
-                ? relativePath
-                : getDirPath(Subdirectory.INSTANCES) + File.separator + relativePath;
     }
 
     public String getAbsoluteInstanceFilePath(String filePath) {

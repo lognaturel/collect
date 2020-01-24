@@ -73,8 +73,8 @@ public class FormLoadingUtils {
     private static void saveFormToDatabase(File outFile) {
         Map<String, String> formInfo = FileUtils.getMetadataFromFormDefinition(outFile);
         final ContentValues v = new ContentValues();
-        v.put(FormsColumns.FORM_FILE_PATH, new StorageManager().getFormFilePathToStoreInDatabaseBasingOnRelativePath(outFile.getName()));
-        v.put(FormsColumns.FORM_MEDIA_PATH, new StorageManager().getFormFilePathToStoreInDatabaseBasingOnRelativePath(FileUtils.constructMediaPath(outFile.getName())));
+        v.put(FormsColumns.FORM_FILE_PATH, new StorageManager().getDbPathFromRelativePath(outFile.getName(), StorageManager.Subdirectory.FORMS));
+        v.put(FormsColumns.FORM_MEDIA_PATH, new StorageManager().getDbPathFromRelativePath(FileUtils.constructMediaPath(outFile.getName()), StorageManager.Subdirectory.FORMS));
         v.put(FormsColumns.DISPLAY_NAME, formInfo.get(FileUtils.TITLE));
         v.put(FormsColumns.JR_VERSION, formInfo.get(FileUtils.VERSION));
         v.put(FormsColumns.JR_FORM_ID, formInfo.get(FileUtils.FORMID));

@@ -13,7 +13,7 @@ import timber.log.Timber;
 import static org.odk.collect.android.preferences.GeneralKeys.KEY_SCOPED_STORAGE_USED;
 
 public class StorageManager {
-    public String[] getODKDirPaths() {
+    public String[] getRequiredDirPaths() {
         return new String[]{
                 getMainODKDirPath(),
                 getDirPath(Subdirectory.FORMS),
@@ -26,11 +26,11 @@ public class StorageManager {
 
     private String getStoragePath() {
         return isScopedStorageUsed()
-                ? getPrimaryExternalStorageFilePath()
-                : getSecondaryExternalStorageFilePath();
+                ? getScopedExternalFilesDir()
+                : getRootExternalFilesDir();
     }
 
-    String getPrimaryExternalStorageFilePath() {
+    String getScopedExternalFilesDir() {
         File primaryStorageFile = Collect.getInstance().getExternalFilesDir(null);
         if (primaryStorageFile != null) {
             return primaryStorageFile.getAbsolutePath();
@@ -38,7 +38,7 @@ public class StorageManager {
         return "";
     }
 
-    String getSecondaryExternalStorageFilePath() {
+    String getRootExternalFilesDir() {
         return Environment.getExternalStorageDirectory().getAbsolutePath();
     }
 
@@ -138,7 +138,7 @@ public class StorageManager {
                     Collect.getInstance().getString(R.string.sdcard_unmounted, getStorageState()));
         }
 
-        for (String dirPath : getODKDirPaths()) {
+        for (String dirPath : getRequiredDirPaths()) {
             File dir = new File(dirPath);
             if (!dir.exists()) {
                 if (!dir.mkdirs()) {

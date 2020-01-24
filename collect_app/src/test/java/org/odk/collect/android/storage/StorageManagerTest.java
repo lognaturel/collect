@@ -13,8 +13,8 @@ public class StorageManagerTest {
 
     @Before
     public void setup() {
-        doReturn("/storage/emulated/0/Android/data/org.odk.collect.android/files").when(storageManager).getPrimaryExternalStorageFilePath();
-        doReturn("/storage/emulated/0").when(storageManager).getSecondaryExternalStorageFilePath();
+        doReturn("/storage/emulated/0/Android/data/org.odk.collect.android/files").when(storageManager).getScopedExternalFilesDir();
+        doReturn("/storage/emulated/0").when(storageManager).getRootExternalFilesDir();
     }
 
     private void mockUsingScopedStorage() {

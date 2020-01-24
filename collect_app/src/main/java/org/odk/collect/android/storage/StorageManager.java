@@ -50,14 +50,6 @@ public class StorageManager {
         return getMainODKDirPath() + File.separator + subdirectory.getDirectoryName();
     }
 
-    public String getTmpFilePath() {
-        return getDirPath(Subdirectory.CACHE) + File.separator + "tmp.jpg";
-    }
-
-    public String getTmpDrawFilePath() {
-        return getDirPath(Subdirectory.CACHE) + File.separator + "tmpDraw.jpg";
-    }
-
     boolean isScopedStorageUsed() {
         return GeneralSharedPreferences.getInstance().getBoolean(KEY_SCOPED_STORAGE_USED, false);
     }
@@ -125,6 +117,14 @@ public class StorageManager {
         return filePath.startsWith(getDirPath(Subdirectory.INSTANCES))
                 ? filePath.substring(getDirPath(Subdirectory.INSTANCES).length() + 1)
                 : filePath;
+    }
+
+    public String getTmpFilePath() {
+        return getDirPath(Subdirectory.CACHE) + File.separator + "tmp.jpg";
+    }
+
+    public String getTmpDrawFilePath() {
+        return getDirPath(Subdirectory.CACHE) + File.separator + "tmpDraw.jpg";
     }
 
     /**

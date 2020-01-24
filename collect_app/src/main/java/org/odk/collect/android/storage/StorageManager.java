@@ -32,43 +32,6 @@ public class StorageManager {
         }
     }
 
-    /**
-     * Creates required directories on the SDCard (or other external storage)
-     *
-     * @throws RuntimeException if there is no SDCard or the directory exists as a non directory
-     */
-    public void createODKDirs() throws RuntimeException {
-        if (!isStorageAvailable()) {
-            throw new RuntimeException(
-                    Collect.getInstance().getString(R.string.sdcard_unmounted, getStorageState()));
-        }
-
-        for (String dirPath : getODKDirPaths()) {
-            File dir = new File(dirPath);
-            if (!dir.exists()) {
-                if (!dir.mkdirs()) {
-                    String message = Collect.getInstance().getString(R.string.cannot_create_directory, dirPath);
-                    Timber.w(message);
-                    throw new RuntimeException(message);
-                }
-            } else {
-                if (!dir.isDirectory()) {
-                    String message = Collect.getInstance().getString(R.string.not_a_directory, dirPath);
-                    Timber.w(message);
-                    throw new RuntimeException(message);
-                }
-            }
-        }
-    }
-
-    private boolean isStorageAvailable() {
-        return getStorageState().equals(Environment.MEDIA_MOUNTED);
-    }
-
-    private String getStorageState() {
-        return Environment.getExternalStorageState();
-    }
-
     public String[] getODKDirPaths() {
         return new String[]{
                 getMainODKDirPath(),
@@ -181,5 +144,42 @@ public class StorageManager {
         return filePath.startsWith(getDirPath(Subdirectory.INSTANCES))
                 ? filePath.substring(getDirPath(Subdirectory.INSTANCES).length() + 1)
                 : filePath;
+    }
+
+    /**
+     * Creates required directories on the SDCard (or other external storage)
+     *
+     * @throws RuntimeException if there is no SDCard or the directory exists as a non directory
+     */
+    public void createODKDirs() throws RuntimeException {
+        if (!isStorageAvailable()) {
+            throw new RuntimeException(
+                    Collect.getInstance().getString(R.string.sdcard_unmounted, getStorageState()));
+        }
+
+        for (String dirPath : getODKDirPaths()) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) {
+                if (!dir.mkdirs()) {
+                    String message = Collect.getInstance().getString(R.string.cannot_create_directory, dirPath);
+                    Timber.w(message);
+                    throw new RuntimeException(message);
+                }
+            } else {
+                if (!dir.isDirectory()) {
+                    String message = Collect.getInstance().getString(R.string.not_a_directory, dirPath);
+                    Timber.w(message);
+                    throw new RuntimeException(message);
+                }
+            }
+        }
+    }
+
+    private boolean isStorageAvailable() {
+        return getStorageState().equals(Environment.MEDIA_MOUNTED);
+    }
+
+    private String getStorageState() {
+        return Environment.getExternalStorageState();
     }
 }

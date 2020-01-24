@@ -13,6 +13,25 @@ import timber.log.Timber;
 import static org.odk.collect.android.preferences.GeneralKeys.KEY_SCOPED_STORAGE_USED;
 
 public class StorageManager {
+    public enum Subdirectory {
+        FORMS("forms"),
+        INSTANCES("instances"),
+        CACHE(".cache"),
+        METADATA("metadata"),
+        LAYERS("layers"),
+        SETTINGS("settings");
+
+        private String directoryName;
+
+        Subdirectory(String directoryName) {
+            this.directoryName = directoryName;
+        }
+
+        public String getDirectoryName() {
+            return directoryName;
+        }
+    }
+
     /**
      * Creates required directories on the SDCard (or other external storage)
      *
@@ -53,11 +72,11 @@ public class StorageManager {
     public String[] getODKDirPaths() {
         return new String[]{
                 getMainODKDirPath(),
-                getFormsDirPath(),
-                getInstancesDirPath(),
-                getCacheDirPath(),
-                getMetadataDirPath(),
-                getOfflineLayersDirPath()
+                getDirPath(Subdirectory.FORMS),
+                getDirPath(Subdirectory.INSTANCES),
+                getDirPath(Subdirectory.CACHE),
+                getDirPath(Subdirectory.METADATA),
+                getDirPath(Subdirectory.LAYERS)
             };
     }
 
@@ -83,36 +102,16 @@ public class StorageManager {
         return getStoragePath() + File.separator + "odk";
     }
 
-    public String getFormsDirPath() {
-        return getMainODKDirPath() + File.separator + "forms";
-    }
-
-    public String getInstancesDirPath() {
-        return getMainODKDirPath() + File.separator + "instances";
-    }
-
-    public String getMetadataDirPath() {
-        return getMainODKDirPath() + File.separator + "metadata";
-    }
-
-    public String getCacheDirPath() {
-        return getMainODKDirPath() + File.separator + ".cache";
-    }
-
-    public String getOfflineLayersDirPath() {
-        return getMainODKDirPath() + File.separator + "layers";
-    }
-
-    public String getSettingsDirPath() {
-        return getMainODKDirPath() + File.separator + "settings";
+    public String getDirPath(Subdirectory subdirectory) {
+        return getMainODKDirPath() + File.separator + subdirectory.getDirectoryName();
     }
 
     public String getTmpFilePath() {
-        return getCacheDirPath() + File.separator + "tmp.jpg";
+        return getDirPath(Subdirectory.CACHE) + File.separator + "tmp.jpg";
     }
 
     public String getTmpDrawFilePath() {
-        return getCacheDirPath() + File.separator + "tmpDraw.jpg";
+        return getDirPath(Subdirectory.CACHE) + File.separator + "tmpDraw.jpg";
     }
 
     boolean isScopedStorageUsed() {
@@ -127,29 +126,29 @@ public class StorageManager {
     public String getCacheFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
         return isScopedStorageUsed()
                 ? relativePath
-                : getCacheDirPath() + File.separator + relativePath;
+                : getDirPath(Subdirectory.CACHE) + File.separator + relativePath;
     }
 
     public String getAbsoluteCacheFilePath(String filePath) {
         if (filePath == null) {
             return null;
         }
-        return filePath.startsWith(getCacheDirPath())
+        return filePath.startsWith(getDirPath(Subdirectory.CACHE))
                 ? filePath
-                : getCacheDirPath() + File.separator + filePath;
+                : getDirPath(Subdirectory.CACHE) + File.separator + filePath;
     }
 
     // TODO the method should be removed once using Scoped storage became required
     public String getFormFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
         return isScopedStorageUsed()
                 ? relativePath
-                : getFormsDirPath() + File.separator + relativePath;
+                : getDirPath(Subdirectory.FORMS) + File.separator + relativePath;
     }
 
     // TODO the method should be removed once using Scoped storage became required
     public String getRelativeFormFilePath(String filePath) {
-        return filePath.startsWith(getFormsDirPath())
-                ? filePath.substring(getFormsDirPath().length() + 1)
+        return filePath.startsWith(getDirPath(Subdirectory.FORMS))
+                ? filePath.substring(getDirPath(Subdirectory.FORMS).length() + 1)
                 : filePath;
     }
 
@@ -157,30 +156,30 @@ public class StorageManager {
         if (filePath == null) {
             return null;
         }
-        return filePath.startsWith(getFormsDirPath())
+        return filePath.startsWith(getDirPath(Subdirectory.FORMS))
                 ? filePath
-                : getFormsDirPath() + File.separator + filePath;
+                : getDirPath(Subdirectory.FORMS) + File.separator + filePath;
     }
 
     // TODO the method should be removed once using Scoped storage became required
     public String getInstanceFilePathToStoreInDatabaseBasingOnRelativePath(String relativePath) {
         return isScopedStorageUsed()
                 ? relativePath
-                : getInstancesDirPath() + File.separator + relativePath;
+                : getDirPath(Subdirectory.INSTANCES) + File.separator + relativePath;
     }
 
     public String getAbsoluteInstanceFilePath(String filePath) {
         if (filePath == null) {
             return null;
         }
-        return filePath.startsWith(getInstancesDirPath())
+        return filePath.startsWith(getDirPath(Subdirectory.INSTANCES))
                 ? filePath
-                : getInstancesDirPath() + File.separator + filePath;
+                : getDirPath(Subdirectory.INSTANCES) + File.separator + filePath;
     }
 
     public String getRelativeInstanceFilePath(String filePath) {
-        return filePath.startsWith(getInstancesDirPath())
-                ? filePath.substring(getInstancesDirPath().length() + 1)
+        return filePath.startsWith(getDirPath(Subdirectory.INSTANCES))
+                ? filePath.substring(getDirPath(Subdirectory.INSTANCES).length() + 1)
                 : filePath;
     }
 }

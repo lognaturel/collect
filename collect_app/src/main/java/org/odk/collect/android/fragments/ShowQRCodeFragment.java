@@ -305,7 +305,7 @@ public class ShowQRCodeFragment extends Fragment {
                 }
                 return true;
             case R.id.menu_save_preferences:
-                File writeDir = new File(new StorageManager().getSettingsDirPath());
+                File writeDir = new File(new StorageManager().getDirPath(StorageManager.Subdirectory.SETTINGS));
                 if (!writeDir.exists()) {
                     if (!writeDir.mkdirs()) {
                         ToastUtils.showShortToast("Error creating directory "

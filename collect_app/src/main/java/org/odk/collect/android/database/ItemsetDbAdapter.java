@@ -38,7 +38,7 @@ public class ItemsetDbAdapter {
      */
     private static class DatabaseHelper extends SQLiteOpenHelper {
         DatabaseHelper() {
-            super(new DatabaseContext(new StorageManager().getDirPath(StorageManager.Subdirectory.METADATA)), DATABASE_NAME, null, DATABASE_VERSION);
+            super(new DatabaseContext(new StorageManager().getAbsolutePath(StorageManager.Subdirectory.METADATA)), DATABASE_NAME, null, DATABASE_VERSION);
         }
 
         @Override

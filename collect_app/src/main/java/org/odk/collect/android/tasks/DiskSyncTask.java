@@ -66,7 +66,7 @@ public class DiskSyncTask extends AsyncTask<Void, String, String> {
             // Process everything then report what didn't work.
             StringBuilder errors = new StringBuilder();
 
-            File formDir = new File(new StorageManager().getDirPath(StorageManager.Subdirectory.FORMS));
+            File formDir = new File(new StorageManager().getAbsolutePath(StorageManager.Subdirectory.FORMS));
             if (formDir.exists() && formDir.isDirectory()) {
                 // Get all the files in the /odk/foms directory
                 File[] formDefs = formDir.listFiles();

@@ -595,7 +595,7 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                         formPath.lastIndexOf('.'))
                         + "_";
                 final String fileSuffix = ".xml.save";
-                File cacheDir = new File(new StorageManager().getDirPath(StorageManager.Subdirectory.CACHE));
+                File cacheDir = new File(new StorageManager().getAbsolutePath(StorageManager.Subdirectory.CACHE));
                 File[] files = cacheDir.listFiles(pathname -> {
                     String name = pathname.getName();
                     return name.startsWith(filePrefix)
@@ -613,7 +613,7 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                                     candidate.getName().length()
                                             - fileSuffix.length());
                     File instanceDir = new File(
-                            new StorageManager().getDirPath(StorageManager.Subdirectory.INSTANCES) + File.separator
+                            new StorageManager().getAbsolutePath(StorageManager.Subdirectory.INSTANCES) + File.separator
                                     + instanceDirName);
                     File instanceFile = new File(instanceDir,
                             instanceDirName + ".xml");
@@ -2519,7 +2519,7 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                 Locale.ENGLISH).format(Calendar.getInstance().getTime());
         String file = formPath.substring(formPath.lastIndexOf('/') + 1,
                 formPath.lastIndexOf('.'));
-        String path = new StorageManager().getDirPath(StorageManager.Subdirectory.INSTANCES) + File.separator + file + "_"
+        String path = new StorageManager().getAbsolutePath(StorageManager.Subdirectory.INSTANCES) + File.separator + file + "_"
                 + time;
         if (FileUtils.createFolder(path)) {
             File instanceFile = new File(path + File.separator + file + "_" + time + ".xml");

@@ -16,11 +16,11 @@ public class StorageManager {
     public String[] getRequiredDirPaths() {
         return new String[]{
                 getMainODKDirPath(),
-                getDirPath(Subdirectory.FORMS),
-                getDirPath(Subdirectory.INSTANCES),
-                getDirPath(Subdirectory.CACHE),
-                getDirPath(Subdirectory.METADATA),
-                getDirPath(Subdirectory.LAYERS)
+                getAbsolutePath(Subdirectory.FORMS),
+                getAbsolutePath(Subdirectory.INSTANCES),
+                getAbsolutePath(Subdirectory.CACHE),
+                getAbsolutePath(Subdirectory.METADATA),
+                getAbsolutePath(Subdirectory.LAYERS)
             };
     }
 
@@ -46,7 +46,7 @@ public class StorageManager {
         return getStoragePath() + File.separator + "odk";
     }
 
-    public String getDirPath(Subdirectory subdirectory) {
+    public String getAbsolutePath(Subdirectory subdirectory) {
         return getMainODKDirPath() + File.separator + subdirectory.getDirectoryName();
     }
 
@@ -62,22 +62,22 @@ public class StorageManager {
     public String getDbPathFromRelativePath(String relativePath, Subdirectory subdirectory) {
         return isScopedStorageUsed()
                 ? relativePath
-                : getDirPath(subdirectory) + File.separator + relativePath;
+                : getAbsolutePath(subdirectory) + File.separator + relativePath;
     }
 
     public String getAbsoluteCacheFilePath(String filePath) {
         if (filePath == null) {
             return null;
         }
-        return filePath.startsWith(getDirPath(Subdirectory.CACHE))
+        return filePath.startsWith(getAbsolutePath(Subdirectory.CACHE))
                 ? filePath
-                : getDirPath(Subdirectory.CACHE) + File.separator + filePath;
+                : getAbsolutePath(Subdirectory.CACHE) + File.separator + filePath;
     }
 
     // TODO the method should be removed once using Scoped storage became required
     public String getRelativeFormFilePath(String filePath) {
-        return filePath.startsWith(getDirPath(Subdirectory.FORMS))
-                ? filePath.substring(getDirPath(Subdirectory.FORMS).length() + 1)
+        return filePath.startsWith(getAbsolutePath(Subdirectory.FORMS))
+                ? filePath.substring(getAbsolutePath(Subdirectory.FORMS).length() + 1)
                 : filePath;
     }
 
@@ -85,32 +85,32 @@ public class StorageManager {
         if (filePath == null) {
             return null;
         }
-        return filePath.startsWith(getDirPath(Subdirectory.FORMS))
+        return filePath.startsWith(getAbsolutePath(Subdirectory.FORMS))
                 ? filePath
-                : getDirPath(Subdirectory.FORMS) + File.separator + filePath;
+                : getAbsolutePath(Subdirectory.FORMS) + File.separator + filePath;
     }
 
     public String getAbsoluteInstanceFilePath(String filePath) {
         if (filePath == null) {
             return null;
         }
-        return filePath.startsWith(getDirPath(Subdirectory.INSTANCES))
+        return filePath.startsWith(getAbsolutePath(Subdirectory.INSTANCES))
                 ? filePath
-                : getDirPath(Subdirectory.INSTANCES) + File.separator + filePath;
+                : getAbsolutePath(Subdirectory.INSTANCES) + File.separator + filePath;
     }
 
     public String getRelativeInstanceFilePath(String filePath) {
-        return filePath.startsWith(getDirPath(Subdirectory.INSTANCES))
-                ? filePath.substring(getDirPath(Subdirectory.INSTANCES).length() + 1)
+        return filePath.startsWith(getAbsolutePath(Subdirectory.INSTANCES))
+                ? filePath.substring(getAbsolutePath(Subdirectory.INSTANCES).length() + 1)
                 : filePath;
     }
 
     public String getTmpFilePath() {
-        return getDirPath(Subdirectory.CACHE) + File.separator + "tmp.jpg";
+        return getAbsolutePath(Subdirectory.CACHE) + File.separator + "tmp.jpg";
     }
 
     public String getTmpDrawFilePath() {
-        return getDirPath(Subdirectory.CACHE) + File.separator + "tmpDraw.jpg";
+        return getAbsolutePath(Subdirectory.CACHE) + File.separator + "tmpDraw.jpg";
     }
 
     /**

@@ -30,12 +30,12 @@ public class StorageManagerTest {
         mockUsingSdCard();
 
         assertEquals("/storage/emulated/0/odk", storageManager.getMainODKDirPath());
-        assertEquals("/storage/emulated/0/odk/forms", storageManager.getDirPath(StorageManager.Subdirectory.FORMS));
-        assertEquals("/storage/emulated/0/odk/instances", storageManager.getDirPath(StorageManager.Subdirectory.INSTANCES));
-        assertEquals("/storage/emulated/0/odk/metadata", storageManager.getDirPath(StorageManager.Subdirectory.METADATA));
-        assertEquals("/storage/emulated/0/odk/.cache", storageManager.getDirPath(StorageManager.Subdirectory.CACHE));
-        assertEquals("/storage/emulated/0/odk/layers", storageManager.getDirPath(StorageManager.Subdirectory.LAYERS));
-        assertEquals("/storage/emulated/0/odk/settings", storageManager.getDirPath(StorageManager.Subdirectory.SETTINGS));
+        assertEquals("/storage/emulated/0/odk/forms", storageManager.getAbsolutePath(StorageManager.Subdirectory.FORMS));
+        assertEquals("/storage/emulated/0/odk/instances", storageManager.getAbsolutePath(StorageManager.Subdirectory.INSTANCES));
+        assertEquals("/storage/emulated/0/odk/metadata", storageManager.getAbsolutePath(StorageManager.Subdirectory.METADATA));
+        assertEquals("/storage/emulated/0/odk/.cache", storageManager.getAbsolutePath(StorageManager.Subdirectory.CACHE));
+        assertEquals("/storage/emulated/0/odk/layers", storageManager.getAbsolutePath(StorageManager.Subdirectory.LAYERS));
+        assertEquals("/storage/emulated/0/odk/settings", storageManager.getAbsolutePath(StorageManager.Subdirectory.SETTINGS));
         assertEquals("/storage/emulated/0/odk/.cache/tmp.jpg", storageManager.getTmpFilePath());
         assertEquals("/storage/emulated/0/odk/.cache/tmpDraw.jpg", storageManager.getTmpDrawFilePath());
     }
@@ -45,12 +45,12 @@ public class StorageManagerTest {
         mockUsingScopedStorage();
 
         assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk", storageManager.getMainODKDirPath());
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms", storageManager.getDirPath(StorageManager.Subdirectory.FORMS));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances", storageManager.getDirPath(StorageManager.Subdirectory.INSTANCES));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/metadata", storageManager.getDirPath(StorageManager.Subdirectory.METADATA));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache", storageManager.getDirPath(StorageManager.Subdirectory.CACHE));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/layers", storageManager.getDirPath(StorageManager.Subdirectory.LAYERS));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/settings", storageManager.getDirPath(StorageManager.Subdirectory.SETTINGS));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms", storageManager.getAbsolutePath(StorageManager.Subdirectory.FORMS));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances", storageManager.getAbsolutePath(StorageManager.Subdirectory.INSTANCES));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/metadata", storageManager.getAbsolutePath(StorageManager.Subdirectory.METADATA));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache", storageManager.getAbsolutePath(StorageManager.Subdirectory.CACHE));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/layers", storageManager.getAbsolutePath(StorageManager.Subdirectory.LAYERS));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/settings", storageManager.getAbsolutePath(StorageManager.Subdirectory.SETTINGS));
         assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/tmp.jpg", storageManager.getTmpFilePath());
         assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/tmpDraw.jpg", storageManager.getTmpDrawFilePath());
     }

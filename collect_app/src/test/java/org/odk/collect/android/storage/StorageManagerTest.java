@@ -103,8 +103,8 @@ public class StorageManagerTest {
     public void getRelativeFormFilePath_should_returnRelativePathToInstanceFile() {
         mockUsingScopedStorage();
 
-        assertEquals("All widgets.xml", storageManager.getRelativeFormFilePath("All widgets.xml"));
-        assertEquals("All widgets.xml", storageManager.getRelativeFormFilePath("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml"));
+        assertEquals("All widgets.xml", storageManager.getRelativePath(StorageManager.Subdirectory.FORMS, "All widgets.xml"));
+        assertEquals("All widgets.xml", storageManager.getRelativePath(StorageManager.Subdirectory.FORMS, "/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml"));
     }
 
     @Test
@@ -133,7 +133,7 @@ public class StorageManagerTest {
     public void getRelativeInstanceFilePath_should_returnRelativePathToInstanceFile() {
         mockUsingScopedStorage();
 
-        assertEquals("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getRelativeInstanceFilePath("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
-        assertEquals("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getRelativeInstanceFilePath("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
+        assertEquals("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getRelativePath(StorageManager.Subdirectory.INSTANCES, "All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
+        assertEquals("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getRelativePath(StorageManager.Subdirectory.INSTANCES, "/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
     }
 }

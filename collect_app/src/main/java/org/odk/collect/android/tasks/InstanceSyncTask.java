@@ -169,7 +169,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
                                 // add missing fields into content values
                                 ContentValues values = new ContentValues();
                                 StorageManager storageManager = new StorageManager();
-                                values.put(InstanceColumns.INSTANCE_FILE_PATH, storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, storageManager.getRelativeInstanceFilePath(candidateInstance)));
+                                values.put(InstanceColumns.INSTANCE_FILE_PATH, storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, storageManager.getRelativePath(StorageManager.Subdirectory.INSTANCES, candidateInstance)));
                                 values.put(InstanceColumns.SUBMISSION_URI, submissionUri);
                                 values.put(InstanceColumns.DISPLAY_NAME, formName);
                                 values.put(InstanceColumns.JR_FORM_ID, jrFormId);
@@ -265,7 +265,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
                 values.put(InstanceColumns.GEOMETRY_TYPE, (String) null);
                 values.put(InstanceColumns.GEOMETRY, (String) null);
                 StorageManager storageManager = new StorageManager();
-                instancesDao.updateInstance(values, InstanceColumns.INSTANCE_FILE_PATH + "=?", new String[]{storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, storageManager.getRelativeInstanceFilePath(candidateInstance))});
+                instancesDao.updateInstance(values, InstanceColumns.INSTANCE_FILE_PATH + "=?", new String[]{storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, storageManager.getRelativePath(StorageManager.Subdirectory.INSTANCES, candidateInstance))});
 
                 SaveToDiskTask.manageFilesAfterSavingEncryptedForm(instanceXml, submissionXml);
                 if (!EncryptionUtils.deletePlaintextFiles(instanceXml, null)) {

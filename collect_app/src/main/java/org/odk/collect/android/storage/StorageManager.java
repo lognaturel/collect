@@ -75,15 +75,9 @@ public class StorageManager {
     }
 
     // TODO the method should be removed once using Scoped storage became required
-    public String getRelativeFormFilePath(String filePath) {
-        return filePath.startsWith(getAbsolutePath(Subdirectory.FORMS))
-                ? filePath.substring(getAbsolutePath(Subdirectory.FORMS).length() + 1)
-                : filePath;
-    }
-
-    public String getRelativeInstanceFilePath(String filePath) {
-        return filePath.startsWith(getAbsolutePath(Subdirectory.INSTANCES))
-                ? filePath.substring(getAbsolutePath(Subdirectory.INSTANCES).length() + 1)
+    public String getRelativePath(Subdirectory subdirectory, String filePath) {
+        return filePath.startsWith(getAbsolutePath(subdirectory))
+                ? filePath.substring(getAbsolutePath(subdirectory).length() + 1)
                 : filePath;
     }
 

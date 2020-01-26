@@ -303,7 +303,7 @@ public class FormDownloader {
                 cursor.moveToFirst();
                 uri = Uri.withAppendedPath(FormsColumns.CONTENT_URI,
                         cursor.getString(cursor.getColumnIndex(FormsColumns._ID)));
-                mediaPath = new StorageManager().getAbsoluteFormFilePath(cursor.getString(cursor.getColumnIndex(FormsColumns.FORM_MEDIA_PATH)));
+                mediaPath = new StorageManager().getAbsolutePath(StorageManager.Subdirectory.FORMS, cursor.getString(cursor.getColumnIndex(FormsColumns.FORM_MEDIA_PATH)));
             }
         }
 
@@ -366,7 +366,7 @@ public class FormDownloader {
                 FileUtils.deleteAndReport(f);
 
                 // set the file returned to the file we already had
-                String existingPath = storageManager.getAbsoluteFormFilePath(c.getString(c.getColumnIndex(FormsColumns.FORM_FILE_PATH)));
+                String existingPath = storageManager.getAbsolutePath(StorageManager.Subdirectory.FORMS, c.getString(c.getColumnIndex(FormsColumns.FORM_FILE_PATH)));
                 f = new File(existingPath);
                 Timber.w("Will use %s", existingPath);
             }

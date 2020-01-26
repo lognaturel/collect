@@ -73,8 +73,8 @@ public class StorageManagerTest {
     public void getAbsoluteCacheFilePath_should_returnAbsolutePathToCacheFile() {
         mockUsingScopedStorage();
 
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef", storageManager.getAbsoluteCacheFilePath("4cd980d50f884362afba842cbff3a798.formdef"));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef", storageManager.getAbsoluteCacheFilePath("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef"));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef", storageManager.getAbsolutePath(StorageManager.Subdirectory.CACHE, "4cd980d50f884362afba842cbff3a798.formdef"));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef", storageManager.getAbsolutePath(StorageManager.Subdirectory.CACHE, "/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef"));
     }
 
     @Test
@@ -95,8 +95,8 @@ public class StorageManagerTest {
     public void getAbsoluteFormFilePath_should_returnAbsolutePathToFormFile() {
         mockUsingScopedStorage();
 
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml", storageManager.getAbsoluteFormFilePath("All widgets.xml"));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml", storageManager.getAbsoluteFormFilePath("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml"));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml", storageManager.getAbsolutePath(StorageManager.Subdirectory.FORMS, "All widgets.xml"));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml", storageManager.getAbsolutePath(StorageManager.Subdirectory.FORMS, "/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/forms/All widgets.xml"));
     }
 
     @Test
@@ -125,8 +125,8 @@ public class StorageManagerTest {
     public void getAbsoluteInstanceFilePath_should_returnAbsolutePathToInstanceFile() {
         mockUsingScopedStorage();
 
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getAbsoluteInstanceFilePath("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
-        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getAbsoluteInstanceFilePath("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getAbsolutePath(StorageManager.Subdirectory.INSTANCES, "All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
+        assertEquals("/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getAbsolutePath(StorageManager.Subdirectory.INSTANCES, "/storage/emulated/0/Android/data/org.odk.collect.android/files/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
     }
 
     @Test

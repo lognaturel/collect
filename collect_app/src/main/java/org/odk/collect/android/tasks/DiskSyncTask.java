@@ -93,7 +93,7 @@ public class DiskSyncTask extends AsyncTask<Void, String, String> {
                     while (cursor.moveToNext()) {
                         // For each element in the provider, see if the file already exists
                         String sqlFilename =
-                                new StorageManager().getAbsoluteFormFilePath(cursor.getString(
+                                new StorageManager().getAbsolutePath(StorageManager.Subdirectory.FORMS, cursor.getString(
                                         cursor.getColumnIndex(FormsColumns.FORM_FILE_PATH)));
                         String md5 = cursor.getString(
                                 cursor.getColumnIndex(FormsColumns.MD5_HASH));

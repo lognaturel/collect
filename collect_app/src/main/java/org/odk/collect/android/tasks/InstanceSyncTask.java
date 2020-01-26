@@ -120,7 +120,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
                     instanceCursor.moveToPosition(-1);
 
                     while (instanceCursor.moveToNext()) {
-                        String instanceFilename = new StorageManager().getAbsoluteInstanceFilePath(instanceCursor.getString(
+                        String instanceFilename = new StorageManager().getAbsolutePath(StorageManager.Subdirectory.INSTANCES, instanceCursor.getString(
                                 instanceCursor.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH)));
                         String instanceStatus = instanceCursor.getString(
                                 instanceCursor.getColumnIndex(InstanceColumns.STATUS));

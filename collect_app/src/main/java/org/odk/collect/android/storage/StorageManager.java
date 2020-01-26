@@ -65,13 +65,13 @@ public class StorageManager {
                 : getAbsolutePath(subdirectory) + File.separator + relativePath;
     }
 
-    public String getAbsoluteCacheFilePath(String filePath) {
+    public String getAbsolutePath(Subdirectory subdirectory, String filePath) {
         if (filePath == null) {
             return null;
         }
-        return filePath.startsWith(getAbsolutePath(Subdirectory.CACHE))
+        return filePath.startsWith(getAbsolutePath(subdirectory))
                 ? filePath
-                : getAbsolutePath(Subdirectory.CACHE) + File.separator + filePath;
+                : getAbsolutePath(subdirectory) + File.separator + filePath;
     }
 
     // TODO the method should be removed once using Scoped storage became required
@@ -79,24 +79,6 @@ public class StorageManager {
         return filePath.startsWith(getAbsolutePath(Subdirectory.FORMS))
                 ? filePath.substring(getAbsolutePath(Subdirectory.FORMS).length() + 1)
                 : filePath;
-    }
-
-    public String getAbsoluteFormFilePath(String filePath) {
-        if (filePath == null) {
-            return null;
-        }
-        return filePath.startsWith(getAbsolutePath(Subdirectory.FORMS))
-                ? filePath
-                : getAbsolutePath(Subdirectory.FORMS) + File.separator + filePath;
-    }
-
-    public String getAbsoluteInstanceFilePath(String filePath) {
-        if (filePath == null) {
-            return null;
-        }
-        return filePath.startsWith(getAbsolutePath(Subdirectory.INSTANCES))
-                ? filePath
-                : getAbsolutePath(Subdirectory.INSTANCES) + File.separator + filePath;
     }
 
     public String getRelativeInstanceFilePath(String filePath) {

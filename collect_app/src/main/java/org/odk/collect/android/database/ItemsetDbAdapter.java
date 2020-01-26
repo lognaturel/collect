@@ -191,7 +191,7 @@ public class ItemsetDbAdapter {
         if (c != null) {
             if (c.getCount() == 1) {
                 c.moveToFirst();
-                String table = getMd5FromString(new StorageManager().getAbsoluteFormFilePath(c.getString(c.getColumnIndex(KEY_PATH))));
+                String table = getMd5FromString(new StorageManager().getAbsolutePath(StorageManager.Subdirectory.FORMS, c.getString(c.getColumnIndex(KEY_PATH))));
                 db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE + table);
             }
             c.close();

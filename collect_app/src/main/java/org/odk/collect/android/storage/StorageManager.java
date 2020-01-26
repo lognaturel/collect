@@ -50,6 +50,15 @@ public class StorageManager {
         return getMainODKDirPath() + File.separator + subdirectory.getDirectoryName();
     }
 
+    public String getAbsolutePath(Subdirectory subdirectory, String filePath) {
+        if (filePath == null) {
+            return null;
+        }
+        return filePath.startsWith(getAbsolutePath(subdirectory))
+                ? filePath
+                : getAbsolutePath(subdirectory) + File.separator + filePath;
+    }
+
     boolean isScopedStorageUsed() {
         return GeneralSharedPreferences.getInstance().getBoolean(KEY_SCOPED_STORAGE_USED, false);
     }
@@ -63,15 +72,6 @@ public class StorageManager {
         return isScopedStorageUsed()
                 ? relativePath
                 : getAbsolutePath(subdirectory) + File.separator + relativePath;
-    }
-
-    public String getAbsolutePath(Subdirectory subdirectory, String filePath) {
-        if (filePath == null) {
-            return null;
-        }
-        return filePath.startsWith(getAbsolutePath(subdirectory))
-                ? filePath
-                : getAbsolutePath(subdirectory) + File.separator + filePath;
     }
 
     // TODO the method should be removed once using Scoped storage became required

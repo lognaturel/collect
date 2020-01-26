@@ -59,14 +59,14 @@ public class StorageManagerTest {
     public void when_scopedStorageNotUsed_should_getCacheFilePathMethodReturnAbsolutePath() {
         mockUsingSdCard();
 
-        assertEquals("/storage/emulated/0/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef", storageManager.getDbPathFromRelativePath("4cd980d50f884362afba842cbff3a798.formdef", StorageManager.Subdirectory.CACHE));
+        assertEquals("/storage/emulated/0/odk/.cache/4cd980d50f884362afba842cbff3a798.formdef", storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.CACHE, "4cd980d50f884362afba842cbff3a798.formdef"));
     }
 
     @Test
     public void when_scopedStorageUsed_should_getCacheFilePathMethodReturnRelativePath() {
         mockUsingScopedStorage();
 
-        assertEquals("4cd980d50f884362afba842cbff3a798.formdef", storageManager.getDbPathFromRelativePath("4cd980d50f884362afba842cbff3a798.formdef", StorageManager.Subdirectory.CACHE));
+        assertEquals("4cd980d50f884362afba842cbff3a798.formdef", storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.CACHE, "4cd980d50f884362afba842cbff3a798.formdef"));
     }
 
     @Test
@@ -81,14 +81,14 @@ public class StorageManagerTest {
     public void when_scopedStorageNotUsed_should_getFormFilePathMethodReturnAbsolutePath() {
         mockUsingSdCard();
 
-        assertEquals("/storage/emulated/0/odk/forms/All widgets.xml", storageManager.getDbPathFromRelativePath("All widgets.xml", StorageManager.Subdirectory.FORMS));
+        assertEquals("/storage/emulated/0/odk/forms/All widgets.xml", storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.FORMS, "All widgets.xml"));
     }
 
     @Test
     public void when_scopedStorageUsed_should_getFormFilePathMethodReturnRelativePath() {
         mockUsingScopedStorage();
 
-        assertEquals("All widgets.xml", storageManager.getDbPathFromRelativePath("All widgets.xml", StorageManager.Subdirectory.FORMS));
+        assertEquals("All widgets.xml", storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.FORMS, "All widgets.xml"));
     }
 
     @Test
@@ -111,14 +111,14 @@ public class StorageManagerTest {
     public void when_scopedStorageNotUsed_should_getInstanceFilePathMethodReturnAbsolutePath() {
         mockUsingSdCard();
 
-        assertEquals("/storage/emulated/0/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getDbPathFromRelativePath("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", StorageManager.Subdirectory.INSTANCES));
+        assertEquals("/storage/emulated/0/odk/instances/All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, "All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
     }
 
     @Test
     public void when_scopedStorageUsed_should_getInstanceFilePathMethodReturnRelativePath() {
         mockUsingScopedStorage();
 
-        assertEquals("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getDbPathFromRelativePath("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", StorageManager.Subdirectory.INSTANCES));
+        assertEquals("All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml", storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, "All widgets_2020-01-20_13-54-11/All widgets_2020-01-20_13-54-11.xml"));
     }
 
     @Test

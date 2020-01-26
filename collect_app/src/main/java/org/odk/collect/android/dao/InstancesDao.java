@@ -169,7 +169,7 @@ public class InstancesDao {
     public Cursor getInstancesCursorForFilePath(String path) {
         StorageManager storageManager = new StorageManager();
         String selection = InstanceColumns.INSTANCE_FILE_PATH + "=?";
-        String[] selectionArgs = {storageManager.getDbPathFromRelativePath(storageManager.getRelativeInstanceFilePath(path), StorageManager.Subdirectory.INSTANCES)};
+        String[] selectionArgs = {storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, storageManager.getRelativeInstanceFilePath(path))};
 
         return getInstancesCursor(null, selection, selectionArgs, null);
     }
@@ -278,8 +278,8 @@ public class InstancesDao {
             int j = 0;
             StorageManager storageManager = new StorageManager();
             while (j < selectionArgs.length) {
-                selectionArgs[j] = storageManager.getDbPathFromRelativePath(storageManager.getRelativeInstanceFilePath(instanceFilePaths.get(
-                        counter * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER + j)), StorageManager.Subdirectory.INSTANCES);
+                selectionArgs[j] = storageManager.getDbPathFromRelativePath(StorageManager.Subdirectory.INSTANCES, storageManager.getRelativeInstanceFilePath(instanceFilePaths.get(
+                        counter * ApplicationConstants.SQLITE_MAX_VARIABLE_NUMBER + j)));
                 selection.append('?');
 
                 if (j != selectionArgs.length - 1) {

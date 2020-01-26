@@ -324,7 +324,7 @@ public class DiskSyncTask extends AsyncTask<Void, String, String> {
 
         // Note, the path doesn't change here, but it needs to be included so the
         // update will automatically update the .md5 and the cache path.
-        updateValues.put(FormsColumns.FORM_FILE_PATH, new StorageManager().getDbPathFromRelativePath(formDefFile.getName(), StorageManager.Subdirectory.FORMS));
+        updateValues.put(FormsColumns.FORM_FILE_PATH, new StorageManager().getDbPathFromRelativePath(StorageManager.Subdirectory.FORMS, formDefFile.getName()));
 
         return updateValues;
     }

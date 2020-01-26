@@ -172,7 +172,7 @@ public class FormsDao {
 
     public Cursor getFormsCursorForFormFilePath(String formFilePath) {
         String selection = FormsColumns.FORM_FILE_PATH + "=?";
-        String[] selectionArgs = {new StorageManager().getDbPathFromRelativePath(new StorageManager().getRelativeFormFilePath(formFilePath), StorageManager.Subdirectory.FORMS)};
+        String[] selectionArgs = {new StorageManager().getDbPathFromRelativePath(StorageManager.Subdirectory.FORMS, new StorageManager().getRelativeFormFilePath(formFilePath))};
 
         return getFormsCursor(null, selection, selectionArgs, null);
     }

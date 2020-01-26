@@ -68,7 +68,7 @@ public class StorageManager {
     }
 
     // TODO the method should be removed once using Scoped storage became required
-    public String getDbPathFromRelativePath(String relativePath, Subdirectory subdirectory) {
+    public String getDbPathFromRelativePath(Subdirectory subdirectory, String relativePath) {
         return isScopedStorageUsed()
                 ? relativePath
                 : getAbsolutePath(subdirectory) + File.separator + relativePath;

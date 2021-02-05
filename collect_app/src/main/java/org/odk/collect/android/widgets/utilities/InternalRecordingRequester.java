@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity;
 
 import org.javarosa.core.model.FormIndex;
 import org.javarosa.core.model.data.StringData;
+import org.javarosa.core.model.instance.TreeReference;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.analytics.AnalyticsEvents;
 import org.odk.collect.android.application.Collect;
@@ -82,7 +83,7 @@ public class InternalRecordingRequester implements RecordingRequester {
                     // ?
                 }
 
-                if (!session.getId().equals("background")) {
+                if (!(session.getId() instanceof TreeReference)) {
                     session.getFile().delete();
                 }
             }

@@ -63,9 +63,13 @@ import com.google.zxing.integration.android.IntentResult;
 import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.FormIndex;
 import org.javarosa.core.model.SelectChoice;
+import org.javarosa.core.model.actions.Actions;
+import org.javarosa.core.model.actions.recordaudio.RecordAudioActionHandler;
+import org.javarosa.core.model.actions.recordaudio.XFormsActionListener;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.helper.Selection;
 import org.javarosa.core.model.instance.TreeElement;
+import org.javarosa.core.model.instance.TreeReference;
 import org.javarosa.form.api.FormEntryCaption;
 import org.javarosa.form.api.FormEntryController;
 import org.javarosa.form.api.FormEntryPrompt;
@@ -216,7 +220,7 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
         AudioControllerView.SwipableParent, FormIndexAnimationHandler.Listener,
         QuitFormDialogFragment.Listener, DeleteRepeatDialogFragment.DeleteRepeatDialogCallback,
         SelectMinimalDialog.SelectMinimalDialogListener, CustomDatePickerDialog.DateChangeListener,
-        CustomTimePickerDialog.TimeChangeListener {
+        CustomTimePickerDialog.TimeChangeListener, XFormsActionListener {
 
     // Defines for FormEntryActivity
     private static final boolean EXIT = true;
@@ -305,6 +309,13 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
         swipeHandler.setAllowSwiping(doSwipe);
     }
 
+    @Override
+    public void actionTriggered(String actionName, TreeReference targetReference) {
+        if (!audioRecorder.isRecording() && actionName.equals(RecordAudioActionHandler.ELEMENT_NAME)) {
+            audioRecorder.start(targetReference, Output.AMR);
+        }
+    }
+
     enum AnimationType {
         LEFT, RIGHT, FADE
     }
@@ -374,6 +385,9 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Actions.registerActionListener(RecordAudioActionHandler.ELEMENT_NAME, this);
+
         Collect.getInstance().getComponent().inject(this);
         setContentView(R.layout.form_entry);
         setupViewModels();
@@ -504,10 +518,6 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
 
         waitingForDataRegistry = new FormControllerWaitingForDataRegistry();
         externalAppRecordingRequester = new ExternalAppRecordingRequester(this, activityAvailability, waitingForDataRegistry, permissionsProvider, formEntryViewModel);
-
-        if (preferencesProvider.getGeneralSharedPreferences().getBoolean("background_audio_recording", false)) {
-            audioRecorder.start("background", Output.AMR);
-        }
     }
 
     // Precondition: the instance directory must be ready so that the audit file can be created
@@ -1346,7 +1356,7 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                         if (saveAs.getText().length() < 1) {
                             showShortToast(R.string.save_as_error);
                         } else {
-                            if (audioRecorder.isRecording() && !audioRecorder.getCurrentSession().getValue().getId().equals("background")) {
+                            if (audioRecorder.isRecording() && !(audioRecorder.getCurrentSession().getValue().getId() instanceof TreeReference)) {
                                 DialogUtils.showIfNotShowing(RecordingWarningDialogFragment.class, getSupportFragmentManager());
                             } else {
                                 saveForm(EXIT, instanceComplete
@@ -2141,6 +2151,8 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
             // This is the common case -- the form didn't have location audits enabled so the
             // receiver was not registered.
         }
+
+        Actions.unregisterActionListener(RecordAudioActionHandler.ELEMENT_NAME);
 
         super.onDestroy();
     }

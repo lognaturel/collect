@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import org.javarosa.core.model.instance.TreeReference;
 import org.odk.collect.android.R;
 import org.odk.collect.android.analytics.AnalyticsEvents;
 import org.odk.collect.android.databinding.AudioRecordingControllerFragmentBinding;
@@ -103,6 +104,6 @@ public class AudioRecordingControllerFragment extends Fragment {
     }
 
     private boolean isBackgroundRecording(RecordingSession session) {
-        return session.getId().equals("background");
+        return session.getId() instanceof TreeReference;
     }
 }

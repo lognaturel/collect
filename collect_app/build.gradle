@@ -288,11 +288,15 @@ dependencies {
     implementation Dependencies.rarepebble_colorpicker
     implementation Dependencies.commons_io
     implementation Dependencies.opencsv
-    implementation(Dependencies.javarosa) {
-        exclude group: 'joda-time'
-        exclude group: 'org.slf4j'
-        exclude group: 'org.hamcrest', module: 'hamcrest-all'
-    }
+
+    implementation 'net.sf.kxml:kxml2:2.3.0'
+    implementation 'org.apache.commons:commons-csv:1.4'
+    implementation files('javarosa-3.2.0.jar')
+//    implementation(Dependencies.javarosa) {
+//        exclude group: 'joda-time'
+//        exclude group: 'org.slf4j'
+//        exclude group: 'org.hamcrest', module: 'hamcrest-all'
+//    }
     implementation Dependencies.karumi_dexter
     implementation Dependencies.osmdroid
     implementation(Dependencies.google_api_client_android) {

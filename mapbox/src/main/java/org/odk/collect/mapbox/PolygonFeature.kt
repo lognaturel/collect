@@ -15,7 +15,6 @@ import org.odk.collect.maps.MapPoint
 
 class PolygonFeature(
     private val context: Context,
-    private val pointAnnotationManager: PointAnnotationManager,
     private val polygonAnnotationManager: PolygonAnnotationManager,
     points: Iterable<MapPoint>,
     featureClickListener: MapFragment.FeatureListener?,
@@ -38,42 +37,9 @@ class PolygonFeature(
             polygonAnnotationManager.addClickListener(it)
         }
 
-    private val pointAnnotations = points.map {
-        MapUtils.createPointAnnotation(
-            pointAnnotationManager,
-            it,
-            false,
-            MapFragment.CENTER,
-            R.drawable.ic_map_point,
-            context
-        )
-    }
-
-    private val pointClickListener = PointClickListener(
-        pointAnnotations,
-        featureClickListener,
-        featureId
-    ).also { pointAnnotationManager.addClickListener(it) }
-
     override fun dispose() {
         polygonAnnotationManager.delete(polygonAnnotation)
         polygonAnnotationManager.removeClickListener(polygonClickListener)
-        pointAnnotationManager.removeClickListener(pointClickListener)
-    }
-}
-
-private class PointClickListener(
-    private val pointAnnotations: List<PointAnnotation>,
-    private val featureClickListener: MapFragment.FeatureListener?,
-    private val featureId: Int
-) : OnPointAnnotationClickListener {
-    override fun onAnnotationClick(annotation: PointAnnotation): Boolean {
-        return if (pointAnnotations.any { it.id == annotation.id } && featureClickListener != null) {
-            featureClickListener.onFeature(featureId)
-            true
-        } else {
-            false
-        }
     }
 }
 

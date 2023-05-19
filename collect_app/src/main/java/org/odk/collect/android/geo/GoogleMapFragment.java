@@ -71,6 +71,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import javax.inject.Inject;
 
@@ -899,13 +900,8 @@ public class GoogleMapFragment extends SupportMapFragment implements
         private final List<Marker> markers = new ArrayList<>();
 
         PolygonFeature(Context context, GoogleMap map, Iterable<MapPoint> points, int strokeLineColor) {
-
-            for (MapPoint point : points) {
-                markers.add(createMarker(context, new MarkerDescription(point, false, CENTER, new MarkerIconDescription(R.drawable.ic_map_point)), map));
-            }
-
             polygon = map.addPolygon(new PolygonOptions()
-                    .addAll(markers.stream().map(Marker::getPosition).collect(Collectors.toList()))
+                    .addAll(StreamSupport.stream(points.spliterator(), false).map(p -> new LatLng(p.latitude, p.longitude)).collect(Collectors.toList()))
                     .strokeColor(strokeLineColor)
                     .strokeWidth(5)
                     .fillColor(ColorUtils.setAlphaComponent(strokeLineColor, 68))

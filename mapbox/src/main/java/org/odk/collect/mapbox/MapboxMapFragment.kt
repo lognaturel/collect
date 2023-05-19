@@ -351,7 +351,6 @@ class MapboxMapFragment :
         val featureId = nextFeatureId++
         features[featureId] = PolygonFeature(
             requireContext(),
-            pointAnnotationManager,
             mapView.annotations.createPolygonAnnotationManager(),
             points,
             featureClickListener,

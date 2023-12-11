@@ -2,7 +2,6 @@ package org.odk.collect.android.geo;
 
 import static org.odk.collect.settings.keys.ProjectKeys.BASEMAP_SOURCE_CARTO;
 import static org.odk.collect.settings.keys.ProjectKeys.BASEMAP_SOURCE_GOOGLE;
-import static org.odk.collect.settings.keys.ProjectKeys.BASEMAP_SOURCE_MAPBOX;
 import static org.odk.collect.settings.keys.ProjectKeys.BASEMAP_SOURCE_OSM;
 import static org.odk.collect.settings.keys.ProjectKeys.BASEMAP_SOURCE_USGS;
 import static org.odk.collect.settings.keys.ProjectKeys.KEY_BASEMAP_SOURCE;
@@ -66,12 +65,6 @@ public class MapConfiguratorProvider {
         if (googleMapsConfigurator.isAvailable(context)) {
             sourceOptions.add(new SourceOption(BASEMAP_SOURCE_GOOGLE, org.odk.collect.strings.R.string.basemap_source_google,
                     googleMapsConfigurator
-            ));
-        }
-
-        if (isMapboxSupported()) {
-            sourceOptions.add(new SourceOption(BASEMAP_SOURCE_MAPBOX, org.odk.collect.strings.R.string.basemap_source_mapbox,
-                    MapboxClassInstanceCreator.createMapboxMapConfigurator()
             ));
         }
 

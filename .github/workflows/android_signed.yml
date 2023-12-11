@@ -1,0 +1,59 @@
+name: Build Signed APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build and upload signed APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Eclipse Temurin)
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode keystore
+        env:
+          ENCODED_KEYSTORE: ${{ secrets.KEYSTORE }}
+        run: echo $ENCODED_KEYSTORE | base64 -di > /home/runner/work/collect/odk.keystore
+
+      - name: Decode Google services JSON
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          mkdir odkCollectRelease
+          echo $GOOGLE_SERVICES_JSON | base64 -di > odkCollectRelease/google-services.json
+        working-directory: collect_app/src
+
+      - name: Write secrets file
+        env:
+          RELEASE_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          RELEASE_STORE_FILE: /home/runner/work/collect/odk.keystore
+          RELEASE_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          cat <<EOF > secrets.properties
+          RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS
+          RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD
+          RELEASE_STORE_FILE=$RELEASE_STORE_FILE
+          RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD
+          EOF
+          
+      - name: Build signed APK
+        run: ./gradlew assembleOdkCollectRelease --no-daemon
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HNEC Collect
+          path: collect_app/build/outputs/apk/odkCollectRelease/*.apk

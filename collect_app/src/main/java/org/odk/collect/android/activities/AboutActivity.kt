@@ -69,9 +69,7 @@ class AboutActivity : LocalizedActivity(), AboutItemClickListener {
             when (position) {
                 0 -> websiteTabHelper.openWebPageInCustomTab(this, websiteUri)
                 1 -> forumTabHelper.openWebPageInCustomTab(this, forumUri)
-                2 -> shareApp()
-                3 -> addReview()
-                4 -> startActivity(Intent(this, OssLicensesMenuActivity::class.java))
+                2 -> startActivity(Intent(this, OssLicensesMenuActivity::class.java))
             }
         }
     }
@@ -132,16 +130,6 @@ class AboutActivity : LocalizedActivity(), AboutItemClickListener {
                 R.drawable.ic_outline_forum_24,
                 org.odk.collect.strings.R.string.odk_forum,
                 org.odk.collect.strings.R.string.odk_forum_summary
-            ),
-            intArrayOf(
-                R.drawable.ic_outline_share_24,
-                org.odk.collect.strings.R.string.tell_your_friends,
-                org.odk.collect.strings.R.string.tell_your_friends_msg
-            ),
-            intArrayOf(
-                R.drawable.ic_outline_rate_review_24,
-                org.odk.collect.strings.R.string.leave_a_review,
-                org.odk.collect.strings.R.string.leave_a_review_msg
             ),
             intArrayOf(
                 R.drawable.ic_outline_stars_24,

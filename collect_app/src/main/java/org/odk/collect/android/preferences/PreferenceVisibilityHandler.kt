@@ -95,8 +95,8 @@ class PreferenceVisibilityHandler(
                 ProjectKeys.KEY_FORM_METADATA -> preference.isVisible = state == ProjectPreferencesViewModel.State.UNLOCKED || isOptionEnabled(ProtectedProjectKeys.KEY_CHANGE_FORM_METADATA)
                 ProjectKeys.KEY_ANALYTICS -> preference.isVisible = state == ProjectPreferencesViewModel.State.UNLOCKED || isOptionEnabled(ProtectedProjectKeys.KEY_ANALYTICS)
 
-                "experimental" -> preference.isVisible = !versionInformation.isRelease || BuildConfig.DEBUG
 
+                "experimental" -> preference.isVisible = state == ProjectPreferencesViewModel.State.UNLOCKED
                 "admin_password" -> preference.isVisible = state != ProjectPreferencesViewModel.State.LOCKED
                 "project_management" -> preference.isVisible = state != ProjectPreferencesViewModel.State.LOCKED
                 "access_control" -> preference.isVisible = state != ProjectPreferencesViewModel.State.LOCKED

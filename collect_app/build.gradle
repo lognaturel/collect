@@ -17,9 +17,6 @@ ant.condition(property: 'os', value: 'unix') {
     os(family: 'unix')
 }
 
-// Build numbers were manually set until 1067
-def LEGACY_BUILD_NUMBER_OFFSET = 1067
-
 // Based on http://stackoverflow.com/questions/17097263#24121734
 def getMasterCommitCount = { ->
     try {
@@ -27,10 +24,10 @@ def getMasterCommitCount = { ->
         exec {
             switch (ant.properties.os) {
                 case 'windows':
-                    commandLine 'cmd', '/c', 'git', 'rev-list', '--first-parent', '--count', 'master'
+                    commandLine 'cmd', '/c', 'git', 'rev-list', '--first-parent', '--count', 'origin/master'
                     break
                 case 'unix':
-                    commandLine 'git', 'rev-list', '--first-parent', '--count', 'master'
+                    commandLine 'git', 'rev-list', '--first-parent', '--count', 'origin/master'
                     break
             }
             standardOutput = stdout
@@ -79,11 +76,12 @@ android {
         applicationId('ly.hnec.collect.android')
         minSdkVersion Versions.android_min_sdk
         targetSdkVersion Versions.android_target_sdk
-        versionCode LEGACY_BUILD_NUMBER_OFFSET + getMasterCommitCount()
+        versionCode getMasterCommitCount()
         versionName getVersionName()
         testInstrumentationRunner('androidx.test.runner.AndroidJUnitRunner')
+        multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
-        archivesBaseName = 'ODK-Collect'
+        archivesBaseName = 'HNEC-Collect'
     }
 
     signingConfigs {
@@ -226,7 +224,7 @@ configurations.all {
         // Newer Jackson versions cannot be ued until Collect minSDK >= 26 (https://github.com/FasterXML/jackson-databind#android)
         force 'com.fasterxml.jackson.core:jackson-databind:2.13.5'
     }
-    
+
     transitive = true
 }
 
@@ -294,7 +292,7 @@ dependencies {
     implementation Dependencies.squareup_okhttp
     implementation Dependencies.squareup_okhttp_tls
     implementation Dependencies.burgstaller_okhttp_digest
-    
+
     implementation Dependencies.persian_joda_time
     implementation Dependencies.myanmar_calendar
     implementation Dependencies.bikram_sambat

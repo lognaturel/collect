@@ -14,6 +14,7 @@
 
 package org.odk.collect.android.widgets;
 
+import static org.odk.collect.android.utilities.Appearances.hasAppearance;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 
 import android.annotation.SuppressLint;
@@ -116,6 +117,11 @@ public class ExStringWidget extends QuestionWidget implements WidgetDataReceiver
         if (questionDetails.isReadOnly()) {
             binding.launchAppButton.setVisibility(GONE);
         }
+
+        if (hasAppearance(getFormEntryPrompt(), Appearances.HIDDEN_ANSWER)) {
+            binding.widgetAnswerText.setVisibility(GONE);
+        }
+
         binding.widgetAnswerText.init(
                 QuestionFontSizeUtils.getFontSize(settings, QuestionFontSizeUtils.FontSize.HEADLINE_6),
                 true,

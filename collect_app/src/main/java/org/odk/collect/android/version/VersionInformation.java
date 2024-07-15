@@ -74,8 +74,10 @@ public class VersionInformation {
     }
 
     private String[] getVersionDescriptionComponents() {
+        String noHnec = versionDescriptionProvider.getVersionDescription().replace("-hnec", "");
+
         if (splitDescription == null) {
-            splitDescription = versionDescriptionProvider.getVersionDescription().split("-");
+            splitDescription = noHnec.split("-");
         }
 
         return splitDescription;

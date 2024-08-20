@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import org.odk.collect.android.activities.DeleteFormsActivity
@@ -32,6 +33,8 @@ import org.odk.collect.androidshared.ui.SnackbarUtils
 import org.odk.collect.androidshared.ui.multiclicksafe.MultiClickGuard
 import org.odk.collect.projects.Project
 import org.odk.collect.settings.SettingsProvider
+import org.odk.collect.shared.TimeInMs
+import org.odk.collect.strings.R
 import org.odk.collect.strings.R.string
 import org.odk.collect.webpage.WebViewActivity
 
@@ -79,6 +82,7 @@ class MainMenuFragment(
         initMapbox()
         initButtons(binding)
         initAppName(binding)
+        initSentInfo(binding)
 
         if (permissionsViewModel.shouldAskForPermissions()) {
             DialogFragmentUtils.showIfNotShowing(
@@ -115,6 +119,7 @@ class MainMenuFragment(
         val binding = MainMenuBinding.bind(requireView())
         setButtonsVisibility(binding)
         manageGoogleDriveDeprecationBanner(binding)
+        updateLastSentTime(binding)
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {
@@ -211,14 +216,67 @@ class MainMenuFragment(
             startActivity(Intent(requireContext(), DeleteFormsActivity::class.java))
         }
 
-        mainMenuViewModel.sendableInstancesCount.observe(viewLifecycleOwner) { finalized: Int ->
-            binding.sendData.setNumberOfForms(finalized)
-        }
         mainMenuViewModel.editableInstancesCount.observe(viewLifecycleOwner) { unsent: Int ->
             binding.reviewData.setNumberOfForms(unsent)
         }
+
         mainMenuViewModel.sentInstancesCount.observe(viewLifecycleOwner) { sent: Int ->
             binding.viewSentForms.setNumberOfForms(sent)
+        }
+    }
+
+    private fun initSentInfo(binding: MainMenuBinding) {
+        mainMenuViewModel.sendableInstancesCount.observe(viewLifecycleOwner) { finalized: Int ->
+            binding.sendData.setNumberOfForms(finalized)
+            binding.readyCount.text = context?.resources?.getQuantityString(
+                R.plurals.forms_ready_to_send,
+                finalized,
+                finalized
+            )
+        }
+
+        mainMenuViewModel.sentInstancesCount.observe(viewLifecycleOwner) { _ ->
+            updateLastSentTime(binding)
+        }
+    }
+
+    private fun updateLastSentTime(binding: MainMenuBinding) {
+        // Copypasta from ReadyToSendBanner
+        if (mainMenuViewModel.sentInstancesCount.value != null && mainMenuViewModel.sentInstancesCount.value!! > 0) {
+            binding.lastSent.visibility = ConstraintLayout.VISIBLE
+
+            val lastSentTimeMillis = mainMenuViewModel.getLastSentTimeMillis()
+            if (lastSentTimeMillis >= TimeInMs.ONE_DAY) {
+                val days: Int = (lastSentTimeMillis / TimeInMs.ONE_DAY).toInt()
+                binding.lastSent.text = context?.resources?.getQuantityString(
+                    R.plurals.last_form_sent_days_ago,
+                    days,
+                    days
+                )
+            } else if (lastSentTimeMillis >= TimeInMs.ONE_HOUR) {
+                val hours: Int = (lastSentTimeMillis / TimeInMs.ONE_HOUR).toInt()
+                binding.lastSent.text = context?.resources?.getQuantityString(
+                    R.plurals.last_form_sent_hours_ago,
+                    hours,
+                    hours
+                )
+            } else if (lastSentTimeMillis >= TimeInMs.ONE_MINUTE) {
+                val minutes: Int = (lastSentTimeMillis / TimeInMs.ONE_MINUTE).toInt()
+                binding.lastSent.text = context?.resources?.getQuantityString(
+                    R.plurals.last_form_sent_minutes_ago,
+                    minutes,
+                    minutes
+                )
+            } else {
+                val seconds: Int = (lastSentTimeMillis / TimeInMs.ONE_SECOND).toInt()
+                binding.lastSent.text = context?.resources?.getQuantityString(
+                    R.plurals.last_form_sent_seconds_ago,
+                    seconds,
+                    seconds
+                )
+            }
+        } else {
+            binding.lastSent.visibility = ConstraintLayout.GONE
         }
     }
 

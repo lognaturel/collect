@@ -28,10 +28,10 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <include
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
                 android:id="@+id/google_drive_deprecation_banner"
                 layout="@layout/google_drive_deprecation_banner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/map_box_initialization_fragment" />
@@ -41,10 +41,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/margin_extra_small"
-                app:layout_constraintWidth_max="@dimen/max_content_width"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/google_drive_deprecation_banner" />
+                app:layout_constraintTop_toBottomOf="@id/google_drive_deprecation_banner"
+                app:layout_constraintWidth_max="@dimen/max_content_width" />
 
             <org.odk.collect.android.mainmenu.MainMenuButton
                 android:id="@+id/review_data"
@@ -60,12 +60,12 @@
                 android:id="@+id/send_data"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                app:highlightable="true"
                 app:icon="@drawable/ic_send_24"
                 app:layout_constraintEnd_toEndOf="@id/enter_data"
                 app:layout_constraintStart_toStartOf="@id/enter_data"
                 app:layout_constraintTop_toBottomOf="@id/review_data"
-                app:name="@string/send_data"
-                app:highlightable="true"/>
+                app:name="@string/send_data" />
 
             <org.odk.collect.android.mainmenu.MainMenuButton
                 android:id="@+id/view_sent_forms"
@@ -102,12 +102,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
                 android:textAppearance="?textAppearanceBody1"
                 android:textColor="@color/color_on_surface_medium_emphasis"
-                android:layout_marginTop="@dimen/margin_standard"
                 app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.501"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/manage_forms"
+                app:layout_constraintTop_toBottomOf="@+id/last_sent"
                 tools:text="ODK Collect v2022.3" />
 
             <TextView
@@ -120,6 +121,26 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/app_name"
                 tools:text="commit sha" />
+
+            <TextView
+                android:id="@+id/ready_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:text="10 forms ready to send"
+                android:textAppearance="@style/TextAppearance.Collect.Body1"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/manage_forms" />
+
+            <TextView
+                android:id="@+id/last_sent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Last form sent: 3 days ago"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/ready_count" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>

@@ -169,5 +169,15 @@ class MainMenuViewModel(
         }
     }
 
+    fun getLastSentTimeMillis(): Long {
+        val sentInstances = instancesRepositoryProvider.create().getAllByStatus(Instance.STATUS_SUBMITTED)
+
+        return if (sentInstances.isNotEmpty()) {
+            System.currentTimeMillis() - sentInstances.maxBy { instance -> instance.lastStatusChangeDate }.lastStatusChangeDate
+        } else {
+            0
+        }
+    }
+
     data class SavedForm(val uri: Uri, val message: Int, val action: Int?)
 }

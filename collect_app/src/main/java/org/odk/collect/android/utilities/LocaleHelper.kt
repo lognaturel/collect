@@ -33,7 +33,7 @@ object LocaleHelper {
             val args = sanitizedLocaleCode.split("_").toTypedArray()
             Locale(args[0], args[1])
         } else {
-            Locale(sanitizedLocaleCode)
+            if (localeCode == "ar") Locale("ar", "LY") else Locale(sanitizedLocaleCode)
         }
     }
 }

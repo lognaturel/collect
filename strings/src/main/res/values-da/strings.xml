@@ -30,7 +30,7 @@
   <string name="filter_the_list">Filtrér liste</string>
   <!--Displayed in search boxes for form lists or question types that involve search-->
   <string name="search">Søg</string>
-  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. ODK Collect only captures location if the precise location permission is granted.-->
+  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. HNEC Collect only captures location if the precise location permission is granted.-->
   <!--##############################################
     # FILL BLANK FORM
     ##############################################-->
@@ -271,7 +271,7 @@
   <string name="geotrace_title">GeoTrace</string>
   <string name="gps_enable_message">GPS er slukket på dit udstyr. Har du lyst til at tænde den?</string>
   <string name="geo_clear_warning">Funktion allerede oprettet. Vil du fjerne funktionen?</string>
-  <string name="geo_exit_warning">Fortryd ændringer og returnér til ODK?</string>
+  <string name="geo_exit_warning">Fortryd ændringer og returnér til HNEC?</string>
   <string name="polygon_validator">Du skal have mindst 3 punkter for at lave et polygon</string>
   <string name="polyline_validator">Du skal have mindst 2 punkter for at lave en polylinje</string>
   <string name="clear">Ryd</string>
@@ -394,9 +394,9 @@
   <string name="change_server_url">Serveradresse</string>
   <string name="url_error">Invalid webadresse</string>
   <string name="username">Brugernavn</string>
-  <string name="change_username">ODK brugernavn</string>
+  <string name="change_username">HNEC brugernavn</string>
   <string name="password">Adgangskode</string>
-  <string name="change_password">ODK kodeord</string>
+  <string name="change_password">HNEC kodeord</string>
   <string name="app_theme">Tema</string>
   <string name="theme_light">Lyst tema</string>
   <string name="theme_dark">Mørkt tema</string>
@@ -483,8 +483,8 @@
      # ABOUT
      ##############################################-->
   <string name="about_preferences">Om</string>
-  <string name="tell_your_friends">Del ODK Collect</string>
-  <string name="odk_website">Besøg ODK websiden</string>
+  <string name="tell_your_friends">Del HNEC Collect</string>
+  <string name="odk_website">Besøg HNEC websiden</string>
   <string name="all_open_source_licenses">Open source biblioteker/licenser</string>
   <string name="all_open_source_licenses_msg">Vi står på skuldrene af giganter!</string>
   <!--##############################################
@@ -562,7 +562,7 @@
     ##############################################-->
   <!--Section title in settings-->
   <!--Option provided in the Developer tools settings to force an application crash-->
-  <!--An uncaught exception is an exception that is not handled by ODK Collect and so will force the application to close-->
+  <!--An uncaught exception is an exception that is not handled by HNEC Collect and so will force the application to close-->
   <!--##############################################
     # Form saved Snackbar
     ##############################################-->

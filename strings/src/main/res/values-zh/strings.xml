@@ -49,7 +49,7 @@
   <string name="storage_runtime_permission_denied_title">存储权限</string>
   <string name="storage_runtime_permission_denied_desc">没有这些权限，应用无法访问您的表单或保存答案。当您准备好授予他们时，请重新打开应用程序。</string>
   <string name="location_runtime_permissions_denied_title">位置权限</string>
-  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. ODK Collect only captures location if the precise location permission is granted.-->
+  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. HNEC Collect only captures location if the precise location permission is granted.-->
   <string name="location_runtime_permissions_denied_desc">没有 <b>精确位置</b> 权限， 应用无法记录您的位置。请在准备好授予时重试。</string>
   <string name="camera_runtime_permission_denied_title">相机权限</string>
   <string name="camera_runtime_permission_denied_desc">没有此权限，应用无法访问相机。请在准备好授予时重试。</string>
@@ -973,10 +973,10 @@
   <string name="dev_tools">开发人员工具</string>
   <!--Option provided in the Developer tools settings to force an application crash-->
   <string name="crash_app">崩溃应用程序</string>
-  <!--An uncaught exception is an exception that is not handled by ODK Collect and so will force the application to close-->
+  <!--An uncaught exception is an exception that is not handled by HNEC Collect and so will force the application to close-->
   <string name="crash_app_summary">强制执行导致应用程序崩溃的未捕获异常</string>
   <string name="permission_dialog_title">关于权限</string>
-  <string name="permission_dialog_text">您将被要求允许 ODK Collect 访问以下功能，如果您想使用它们，请选择“允许”。</string>
+  <string name="permission_dialog_text">您将被要求允许 HNEC Collect 访问以下功能，如果您想使用它们，请选择“允许”。</string>
   <string name="notifications">提醒事项</string>
   <string name="required_for_notifications"> 在下载、更新和发送表单时需要显示更新。</string>
   <!--##############################################

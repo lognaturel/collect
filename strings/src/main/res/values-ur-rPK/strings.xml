@@ -25,7 +25,7 @@
   <!--A sort option for blank forms. When this option is selected, the form for which a filled instance was last filled will go first.-->
   <string name="filter_the_list">فہرست کو فلٹر کریں۔</string>
   <!--Displayed in search boxes for form lists or question types that involve search-->
-  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. ODK Collect only captures location if the precise location permission is granted.-->
+  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. HNEC Collect only captures location if the precise location permission is granted.-->
   <!--##############################################
     # FILL BLANK FORM
     ##############################################-->
@@ -249,9 +249,9 @@
   <string name="change_server_url">یو آر ایل (URL)</string>
   <string name="url_error">معافی، url صحیح نہیں ہے</string>
   <string name="username">استعمال کنندہ کا نام</string>
-  <string name="change_username">ODK استعمال کرنے والے کا نام</string>
+  <string name="change_username">HNEC استعمال کرنے والے کا نام</string>
   <string name="password">شناختی لفظ (Password)</string>
-  <string name="change_password">  ODK  کا شناختی لفظ (Password)</string>
+  <string name="change_password">  HNEC  کا شناختی لفظ (Password)</string>
   <string name="use_device_language">فون کی منتخب زبان استعمال کریں</string>
   <string name="font_size">ہجوں کے فانٹ کا ناپ</string>
   <string name="change_font_size">فانٹ کا سائز</string>
@@ -363,7 +363,7 @@
     ##############################################-->
   <!--Section title in settings-->
   <!--Option provided in the Developer tools settings to force an application crash-->
-  <!--An uncaught exception is an exception that is not handled by ODK Collect and so will force the application to close-->
+  <!--An uncaught exception is an exception that is not handled by HNEC Collect and so will force the application to close-->
   <!--##############################################
     # Form saved Snackbar
     ##############################################-->

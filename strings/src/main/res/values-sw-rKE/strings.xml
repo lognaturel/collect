@@ -23,7 +23,7 @@
   <string name="sort_by_name_desc">Jina, Z-A</string>
   <!--A sort option for blank forms. When this option is selected, the form for which a filled instance was last filled will go first.-->
   <!--Displayed in search boxes for form lists or question types that involve search-->
-  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. ODK Collect only captures location if the precise location permission is granted.-->
+  <!--Starting in Android 12, Android makes it possible to give precise or approximate location permissions to an application. HNEC Collect only captures location if the precise location permission is granted.-->
   <!--##############################################
     # FILL BLANK FORM
     ##############################################-->
@@ -303,7 +303,7 @@
   <string name="username">Jina la mtumiaji</string>
   <string name="change_username">Jina la mtumiaji</string>
   <string name="password">Thibitisho</string>
-  <string name="change_password">Nywila ya ODK</string>
+  <string name="change_password">Nywila ya HNEC</string>
   <string name="language">Lugha</string>
   <string name="font_size">Ukubwa wa fonti za nakala</string>
   <string name="change_font_size">Ukubwa wa fonti za nakala</string>
@@ -428,7 +428,7 @@
     ##############################################-->
   <!--Section title in settings-->
   <!--Option provided in the Developer tools settings to force an application crash-->
-  <!--An uncaught exception is an exception that is not handled by ODK Collect and so will force the application to close-->
+  <!--An uncaught exception is an exception that is not handled by HNEC Collect and so will force the application to close-->
   <!--##############################################
     # Form saved Snackbar
     ##############################################-->

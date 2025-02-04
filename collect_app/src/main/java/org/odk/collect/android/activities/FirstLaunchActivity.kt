@@ -10,10 +10,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import org.odk.collect.analytics.Analytics
 import org.odk.collect.android.analytics.AnalyticsEvents
+import org.odk.collect.android.application.initialization.ManagedConfigManager
 import org.odk.collect.android.databinding.FirstLaunchLayoutBinding
 import org.odk.collect.android.injection.DaggerUtils
 import org.odk.collect.android.mainmenu.MainMenuActivity
 import org.odk.collect.android.projects.ManualProjectCreatorDialog
+import org.odk.collect.android.projects.ProjectCreator
 import org.odk.collect.android.projects.ProjectsDataService
 import org.odk.collect.android.projects.QrCodeProjectCreatorDialog
 import org.odk.collect.android.version.VersionInformation
@@ -23,6 +25,7 @@ import org.odk.collect.async.Scheduler
 import org.odk.collect.material.MaterialProgressDialogFragment
 import org.odk.collect.projects.Project
 import org.odk.collect.projects.ProjectsRepository
+import org.odk.collect.settings.ODKAppSettingsImporter
 import org.odk.collect.settings.SettingsProvider
 import org.odk.collect.strings.localization.LocalizedActivity
 import javax.inject.Inject
@@ -43,6 +46,14 @@ class FirstLaunchActivity : LocalizedActivity() {
 
     @Inject
     lateinit var scheduler: Scheduler
+
+    @Inject
+    lateinit var settingsImporter: ODKAppSettingsImporter
+
+    @Inject
+    lateinit var projectCreator: ProjectCreator
+
+    private lateinit var managedConfigManager: ManagedConfigManager
 
     private val viewModel: FirstLaunchViewModel by viewModels {
         object : ViewModelProvider.Factory {
@@ -111,6 +122,21 @@ class FirstLaunchActivity : LocalizedActivity() {
                 }
             }
         }
+    }
+
+    @Override
+    override fun onResume() {
+        super.onResume()
+
+        managedConfigManager = ManagedConfigManager(settingsProvider, projectsRepository, projectCreator, settingsImporter, this)
+        managedConfigManager.initialize()
+    }
+
+    @Override
+    override fun onPause() {
+        super.onPause()
+
+        managedConfigManager.unregisterReceiver()
     }
 }
 

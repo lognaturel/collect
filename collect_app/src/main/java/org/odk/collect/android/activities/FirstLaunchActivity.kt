@@ -130,6 +130,13 @@ class FirstLaunchActivity : LocalizedActivity() {
 
         managedConfigManager = ManagedConfigManager(settingsProvider, projectsRepository, projectCreator, settingsImporter, this)
         managedConfigManager.initialize()
+
+        if (projectsRepository.getAll().isNotEmpty()) {
+            ActivityUtils.startActivityAndCloseAllOthers(
+                this@FirstLaunchActivity,
+                MainMenuActivity::class.java
+            )
+        }
     }
 
     @Override

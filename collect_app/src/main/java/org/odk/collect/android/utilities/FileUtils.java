@@ -28,6 +28,9 @@ import androidx.annotation.Nullable;
 import com.google.common.base.CharMatcher;
 
 import org.apache.commons.io.IOUtils;
+import org.javarosa.core.model.instance.ExternalDataInstance;
+import org.javarosa.core.model.instance.XmlExternalInstance;
+import org.javarosa.xform.util.XFormUtils;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.async.OngoingWorkListener;
 
@@ -195,6 +198,13 @@ public final class FileUtils {
 
         if (!lastSavedFile.exists()) {
             write(lastSavedFile, STUB_XML.getBytes(StandardCharsets.UTF_8));
+        } else {
+            // last-saved file is corrupt in some way, write a stub file instead
+            try {
+                XmlExternalInstance.parse("__last-saved", lastSavedFile.getAbsolutePath());
+            } catch (Exception e) {
+                write(lastSavedFile, STUB_XML.getBytes(StandardCharsets.UTF_8));
+            }
         }
 
         return "jr://file/" + LAST_SAVED_FILENAME;

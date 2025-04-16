@@ -116,6 +116,7 @@ public class ODKView extends SwipeHandler.View implements OnLongClickListener, W
     private final LinearLayout widgetsList;
     private final LinearLayout.LayoutParams layout;
     private final ArrayList<QuestionWidget> widgets;
+    private final AudioHelper audioHelper;
     FormEntryCaption intentGroup;
     int intentGroupStartIndex = -1;
 
@@ -170,7 +171,6 @@ public class ODKView extends SwipeHandler.View implements OnLongClickListener, W
 
         this.widgetFactory = new WidgetFactory(
                 context,
-                readOnlyOverride,
                 settingsProvider.getUnprotectedSettings().getBoolean(KEY_EXTERNAL_APP_RECORDING),
                 waitingForDataRegistry,
                 questionMediaManager,
@@ -370,9 +370,6 @@ public class ODKView extends SwipeHandler.View implements OnLongClickListener, W
      * Note: if the given question is of an unsupported type, a text widget will be created.
      */
     private QuestionWidget configureWidgetForQuestion(FormEntryPrompt question) {
-<<<<<<< HEAD
-        QuestionWidget qw = widgetFactory.createWidgetFromPrompt(question, permissionsProvider);
-=======
         boolean forceReadOnly = false;
 
         if (intentGroup != null) {
@@ -380,7 +377,6 @@ public class ODKView extends SwipeHandler.View implements OnLongClickListener, W
         }
 
         QuestionWidget qw = widgetFactory.createWidgetFromPrompt(question, permissionsProvider, forceReadOnly);
->>>>>>> 2aac6dbe0e (Detect intent groups inside a field list, add launch button)
         qw.setOnLongClickListener(this);
         qw.setValueChangedListener(this);
 
@@ -556,13 +552,9 @@ public class ODKView extends SwipeHandler.View implements OnLongClickListener, W
             } catch (ActivityNotFoundException e) {
                 Timber.d(e, "ActivityNotFoundExcept");
 
-<<<<<<< HEAD
-                ToastUtils.showShortToast(getContext(), errorString);
-=======
                 String formErrorText = c.getSpecialFormQuestionText("noAppErrorString");
                 final String errorString = (formErrorText != null) ? formErrorText : context.getString(org.odk.collect.strings.R.string.no_app);
-                ToastUtils.showShortToast(errorString);
->>>>>>> 2aac6dbe0e (Detect intent groups inside a field list, add launch button)
+                ToastUtils.showShortToast(context, errorString);
             }
         });
     }
